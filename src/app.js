@@ -1,0 +1,50 @@
+const express = require('express')
+const cors = require('cors')
+const http = require('http')
+const morgan = require('morgan')
+const path = require('path')
+const socket = require('socket.io')
+
+require('dotenv').config()
+// setup redis database connection
+require('./database/redis')
+// setup database connection
+require('./database/db.js').startDB([])
+
+const app = express()
+const middlewares = require('./middlewares')
+
+const server = http.createServer(app)
+const io = new socket.Server(server)
+
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+app.use(morgan('tiny'))
+app.use('/static', express.static(path.join(__dirname, '..', 'static')))
+app.set('io', io)
+
+// setup routes
+const userRoutes = require('./routes/user')
+// end of routes
+
+// create a baseurl field containing the request http protocol & url) in the request object
+app.use(function (req, _res, next) {
+    req.baseurl = `${req.protocol}://${req.headers['host']}`
+    next()
+})
+
+app.use('/api/v1/users', userRoutes)
+
+app.use(function (_req, res, _next) {
+    return res.status(404).json({
+        message: 'Resources not found ☹️☹️',
+        status: 404,
+        success: false,
+    })
+})
+app.use(middlewares.errorHandler)
+
+// error handler
+
+module.exports = { server }
