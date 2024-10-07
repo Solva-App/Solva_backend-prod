@@ -107,6 +107,13 @@ module.exports.getUser = async function (req, res, next) {
         const schema = new Schema({})
         if (schema.validate(req.body).error) return next(CustomError.badRequest('this endpoint does not require a body!'))
 
+        const getPrefix = () => {
+            let n = req.user.fullName.split(' ')
+            let fn = n[0][0]
+            let ln = n[n.length - 1][0]
+            return (fn + ln).toLowerCase()
+        }
+
         res.status(OK).json({
             success: true,
             status: res.statusCode,
@@ -114,6 +121,7 @@ module.exports.getUser = async function (req, res, next) {
             data: {
                 hasPassword: Boolean(req?.user?.password),
                 ...req.user.dataValues,
+                prefix: getPrefix(),
                 password: undefined,
             },
         })
@@ -175,6 +183,82 @@ module.exports.sendForgottenPasswordVerificationOtp = async function (req, res, 
 
 module.exports.changePassword = async function (req, res, next) {
     try {
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.updatePassword = async function (req, res, next) {
+    try {
+        const schema = new Schema({
+            oldPassword: { type: 'string', required: true },
+            newPassword: { type: 'string', required: true },
+        })
+
+        const result = schema.validate(req.body)
+        if (result.error) return next(CustomError.badRequest('Invalid Body', result.error))
+
+        const body = result.data
+
+        // validate the password
+        const isPasswordValid = await req.user.verifyPassword(body.oldPassword)
+        if (!isPasswordValid) return next(CustomError.badRequest('Invalid password'))
+
+        // change the password
+        req.user.password = body.newPassword
+        await req.user.encrypt()
+        await req.user.save()
+
+        return res.status(OK).send({
+            message: 'Password changed succssfully!',
+            success: true,
+            status: res.statusCode,
+            data: null,
+        })
+    } catch (error) {
+        return next(error)
+    }
+}
+
+// update profile
+module.exports.updateProfile = async function (req, res, next) {
+    try {
+        const schema = new Schema({
+            fullName: { type: 'string', required: false, trim: true, default: req.user.firstName },
+            email: { type: 'string', required: false, trim: true, default: req.user.lastName },
+            phone: { type: 'string', required: false, trim: true },
+            address: { type: 'string', required: false, trim: true },
+            gender: { type: 'string', required: false, trim: true, toLower: true, enum: ['male', 'female'] },
+        })
+
+        const result = schema.validate(req.body)
+
+        if (result.error) {
+            return next(CustomError.badRequest('Invalid Body', result.error))
+        }
+
+        const body = result.data
+
+        if (body.fullName.split(' ').length < 2) {
+            return next(CustomError.badRequest('Full name is invalid'))
+        }
+
+        // update the nameobject
+        req.user.fullName = body.fullName ?? req.user.fullName
+        req.user.address = body.address ?? req.user.address
+        req.user.email = body.email ?? req.user.email
+        req.user.phone = body.phone ?? req.user.phone
+        req.user.gender = body.gender ?? req.user.phone
+
+        await req.user.save()
+
+        // send response
+        res.status(OK).send({
+            message: 'profile changed successfully',
+            success: true,
+            status: res.statusCode,
+            data: req.user,
+        })
     } catch (error) {
         return next({ error })
     }
