@@ -4,6 +4,7 @@ const { default: isEmail } = require('validator/lib/isEmail')
 const User = require('../models/User')
 const { CREATED, OK } = require('http-status-codes')
 const Token = require('../models/Token')
+const redis = require('./../helpers/redis')
 
 module.exports.createAccount = async function (req, res, next) {
     try {
@@ -116,6 +117,64 @@ module.exports.getUser = async function (req, res, next) {
                 password: undefined,
             },
         })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.generateToken = async function (req, res, next) {
+    try {
+        const schema = new Schema({ refreshToken: { type: 'string', required: true } })
+        const result = schema.validate(req.body)
+        if (result.error) {
+            return next(CustomError.badRequest('Invalid request body'), result.error)
+        }
+
+        const body = result.data
+
+        const tokens = await Token.generateNewAccessToken(body.refreshToken)
+        if (tokens instanceof CustomError) {
+            return next(tokens)
+        }
+
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            data: tokens,
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.sendForgottenPasswordVerificationOtp = async function (req, res, next) {
+    try {
+        let url = `${process.env.BASE}/account/complete/${reference}`
+
+        // saving email to redis
+        await redis.setRedisData(reference, {
+            ...req.body,
+            url: url,
+        })
+
+        emails.emailVerification({
+            url: url,
+            ...req.body,
+        })
+
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: '',
+            data: {},
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.changePassword = async function (req, res, next) {
+    try {
     } catch (error) {
         return next({ error })
     }
