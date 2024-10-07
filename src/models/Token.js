@@ -53,21 +53,15 @@ Token.generate = async function (user, notificationToken) {
         // ensure every accessToken get's delete on login (this will help ensure security)
         // await Token.destroy({ where: { owner: user.id } })
 
-        const accessToken = jsonwebtoken.sign(user, process.env.JWT_ACCESS_TOKEN_SECRET, { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIERATION })
-        const refreshToken = jsonwebtoken.sign(user, process.env.JTW_REFRESH_TOKEN_SECRET, { expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIERATION })
-
-        const accessTokenExpiresIn = new Date()
-        accessTokenExpiresIn.setHours(accessTokenExpiresIn.getHours() + 24)
-        // refreshTokenExpire
-        const refreshTokenExpiresIn = new Date()
-        refreshTokenExpiresIn.setMinutes(refreshTokenExpiresIn.getMinutes() + 30)
+        const accessToken = Token.generateAccessToken(user)
+        const refreshToken = Token.generateRefreshToken(user)
 
         // storing accessToken to database
         const tokens = await Token.create({
-            accessToken: accessToken,
-            accessTokenExpiresIn: accessTokenExpiresIn,
-            refreshToken: refreshToken,
-            refreshTokenExpiresIn: refreshTokenExpiresIn,
+            accessToken: accessToken.token,
+            accessTokenExpiresIn: accessToken.expiresIn,
+            refreshToken: refreshToken.token,
+            refreshTokenExpiresIn: refreshToken.expiresIn,
             owner: user.id,
             notificationToken,
         })
@@ -79,20 +73,59 @@ Token.generate = async function (user, notificationToken) {
     }
 }
 
-Token.isTokenExpired = (token) => {
-    try {
-        const decoded = jsonwebtoken.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET) // Replace 'yourSecretKey' with your actual secret key
+Token.generateAccessToken = (data) => {
+    const accessTokenExpiresIn = new Date()
+    accessTokenExpiresIn.setHours(accessTokenExpiresIn.getHours() + 24)
+    return {
+        token: jsonwebtoken.sign(data, process.env.JWT_ACCESS_TOKEN_SECRET, { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIERATION }),
+        expiresIn: accessTokenExpiresIn,
+    }
+}
 
+Token.generateRefreshToken = (data) => {
+    const refreshTokenExpiresIn = new Date()
+    refreshTokenExpiresIn.setMinutes(refreshTokenExpiresIn.getMinutes() + 30)
+
+    return {
+        token: jsonwebtoken.sign(data, process.env.JTW_REFRESH_TOKEN_SECRET, { expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIERATION }),
+        expiresIn: refreshTokenExpiresIn,
+    }
+}
+
+Token.extractToken = (token, secret = process.env.JWT_ACCESS_TOKEN_SECRET) => {
+    try {
+        const decoded = jsonwebtoken.verify(token, secret)
         // Check if the token has an expiration claim ('exp') and compare it with the current time
         if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-            return true // Token has expired
+            return null // expired token
         }
-
-        return false // Token is still valid
+        return decoded // valid token
     } catch (error) {
         console.error('Error verifying Access Token')
-        return true // Invalid token
+        return null // Invalid token
     }
+}
+
+Token.generateNewAccessToken = async function (refreshToken) {
+    const tokenPayload = Token.extractToken(refreshToken, process.env.JTW_REFRESH_TOKEN_SECRET)
+    if (!tokenPayload) {
+        return CustomError.badRequest('Expired or invalid refresh token')
+    }
+
+    const token = await Token.findOne({ where: { refreshToken: refreshToken } })
+    if (!token) {
+        return CustomError.badRequest('invalid token')
+    }
+
+    delete tokenPayload.iat
+    delete tokenPayload.exp
+
+    const accessToken = Token.generateAccessToken(tokenPayload)
+
+    token.accessToken = accessToken.token
+    token.accessTokenExpiresIn = accessToken.expiresIn
+    await token.save()
+    return token
 }
 
 // delete accesstoken from database
