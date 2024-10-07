@@ -46,6 +46,7 @@ Token.generate = async function (user, notificationToken) {
         // remove unecessary keys from the user object
         user = user.dataValues
         delete user.password
+        delete user.email
         delete user.pin
         delete user.isEmailVerified
         delete user.referral
