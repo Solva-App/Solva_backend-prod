@@ -18,6 +18,10 @@ const userSchema = {
         type: STRING,
         allowNull: true,
     },
+    address: {
+        type: STRING,
+        allowNull: true,
+    },
     phone: {
         type: STRING,
         allowNull: false,
