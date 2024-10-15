@@ -22,6 +22,10 @@ const userSchema = {
         type: STRING,
         allowNull: true,
     },
+    isAdmin: {
+        type: STRING,
+        defaultValue: false,
+    },
     phone: {
         type: STRING,
         allowNull: false,
