@@ -22,3 +22,14 @@ module.exports.auth = async function (req, res, next) {
         next({ error })
     }
 }
+
+module.exports.isAdmin = async function (req, res, next) {
+    try {
+        if (!req.user.isAdmin) {
+            return next(CustomError.unauthorizedRequest('endpoint reserved for admins only'))
+        }
+        return next()
+    } catch (error) {
+        return next({ error })
+    }
+}
