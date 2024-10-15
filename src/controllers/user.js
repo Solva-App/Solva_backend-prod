@@ -24,7 +24,11 @@ module.exports.createAccount = async function (req, res, next) {
         const body = result.data
 
         if (body.fullName.split(' ').length < 2) {
-            return next(CustomError.badRequest('Full name is invalid'))
+            return next(
+                CustomError.badRequest('Invalid request body', {
+                    fullName: { type: 'Full name is invalid' },
+                })
+            )
         }
         // check if email is already used
         const isEmailUsed = await User.findOne({ where: { email: body.email } })
@@ -217,6 +221,20 @@ module.exports.updatePassword = async function (req, res, next) {
         })
     } catch (error) {
         return next(error)
+    }
+}
+
+module.exports.getAllUsers = async function (req, res, next) {
+    try {
+        const users = await User.findAll()
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'Users fetched successfully',
+            data: users,
+        })
+    } catch (error) {
+        return next({ error })
     }
 }
 
