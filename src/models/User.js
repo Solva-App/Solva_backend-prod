@@ -23,7 +23,7 @@ const userSchema = {
         allowNull: true,
     },
     isAdmin: {
-        type: STRING,
+        type: BOOLEAN,
         defaultValue: false,
     },
     phone: {
