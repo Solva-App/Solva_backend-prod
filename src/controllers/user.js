@@ -282,3 +282,24 @@ module.exports.updateProfile = async function (req, res, next) {
         return next({ error })
     }
 }
+
+module.exports.flagUsers = async function (req, res, next) {
+    try {
+        const user = await User.findByPk(req.params.id)
+        if (!user) {
+            return next(CustomError.badRequest('Invalid id'))
+        }
+
+        user.isSuspended = true
+        await user.save()
+
+        return res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'User suspended successfully',
+            data: user,
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
