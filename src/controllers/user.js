@@ -56,6 +56,7 @@ module.exports.createAccount = async function (req, res, next) {
             isSuspended: false,
             role: 'user',
             category: 'user',
+            refferal: '',
             isActive: true,
         })
 
