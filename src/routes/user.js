@@ -15,5 +15,6 @@ router.patch('/', controllers.updateProfile)
 router.use(isAdmin) // ensure only admins  gets access to the below endpoints
 router.get('/all', controllers.getAllUsers)
 router.patch('/flag/:id', controllers.flagUsers)
+router.patch('/unflag/:id', controllers.unFlagUsers)
 
 module.exports = router
