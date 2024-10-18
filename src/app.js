@@ -26,6 +26,9 @@ app.set('io', io)
 
 // setup routes
 const userRoutes = require('./routes/user')
+const jobRoutes = require('./routes/job')
+const grantRoutes = require('./routes/grant')
+const scholarshipRoutes = require('./routes/scholarship')
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -35,6 +38,9 @@ app.use(function (req, _res, next) {
 })
 
 app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/jobs', jobRoutes)
+app.use('/api/v1/grants', grantRoutes)
+app.use('/api/v1/scholarships', scholarshipRoutes)
 
 app.use(function (_req, res, _next) {
     return res.status(404).json({

@@ -115,6 +115,7 @@ Token.generateNewAccessToken = async function (refreshToken) {
 
     const token = await Token.findOne({ where: { refreshToken: refreshToken } })
     if (!token) {
+        // console.log(token)
         return CustomError.badRequest('invalid token')
     }
 
@@ -156,7 +157,7 @@ Token.verify = async function (accessToken) {
     } catch (error) {
         if (error.name.toLowerCase() === 'tokenexpirederror') {
             // delete accesstoken from database
-            await Token.deleteToken(accessToken)
+            // await Token.deleteToken(accessToken)
             return CustomError.unauthorizedRequest('Your Access token has expired!')
         }
 
