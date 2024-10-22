@@ -1,0 +1,38 @@
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../database/db')
+const { STRING, INTEGER, TEXT } = DataTypes
+
+const projectSchema = {
+    owner: {
+        type: INTEGER,
+        allowNull: false,
+    },
+    name: {
+        type: TEXT,
+        allowNull: false,
+    },
+    description: {
+        type: STRING,
+        allowNull: false,
+    },
+}
+
+const Project = sequelize.define('Project', projectSchema, {
+    timestamps: true,
+    hooks: {
+        beforeValidate(_pl) {},
+        beforeUpdate(_pl) {},
+        afterFind(_pl) {},
+    },
+})
+
+// sync database
+Project.sync({ alter: true })
+    .then((_) => {
+        if (process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production') console.log('=> Project model synced ✔️')
+    })
+    .catch((_) => {
+        if (process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production') console.log('Error while syncing Project ❌')
+    })
+
+module.exports = Project
