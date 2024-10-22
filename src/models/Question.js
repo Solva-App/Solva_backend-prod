@@ -1,17 +1,29 @@
 const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
-const { STRING, INTEGER, TEXT } = DataTypes
+const { STRING, INTEGER } = DataTypes
 
 const questionSchema = {
     owner: {
         type: INTEGER,
         allowNull: false,
     },
-    name: {
-        type: TEXT,
+    title: {
+        type: STRING,
         allowNull: false,
     },
-    description: {
+    university: {
+        type: STRING,
+        alowNull: false,
+    },
+    faculty: {
+        type: STRING,
+        allowNull: false,
+    },
+    department: {
+        type: STRING,
+        allowNull: false,
+    },
+    courseCode: {
         type: STRING,
         allowNull: false,
     },
