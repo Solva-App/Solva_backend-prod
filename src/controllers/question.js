@@ -10,8 +10,12 @@ const Question = require('../models/Question')
 module.exports.createPastQuestion = async function (req, res, next) {
     try {
         const schema = new Schema({
-            name: { type: 'string', required: true },
-            description: { type: 'string', required: true },
+            title: { type: 'string', required: true },
+            department: { type: 'string', required: true },
+            university: { type: 'string', required: true },
+            department: { type: 'string', required: true },
+            courseCode: { type: 'string', required: true },
+            faculty: { type: 'string', required: true },
             documents: { type: 'array', required: false },
         })
         req.body.documents = []
@@ -44,8 +48,8 @@ module.exports.createPastQuestion = async function (req, res, next) {
         }
 
         const question = await Question.create({
-            name: body.name,
-            description: body.description,
+            ...body,
+            documents: undefined,
             owner: req.user.id,
         })
 
