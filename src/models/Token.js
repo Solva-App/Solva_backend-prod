@@ -3,6 +3,7 @@ const { sequelize } = require('./../database/db')
 const jsonwebtoken = require('jsonwebtoken')
 const CustomError = require('../helpers/error')
 const User = require('./User')
+const { createHmac } = require('crypto')
 
 const { TEXT, INTEGER, DATE } = DataTypes
 
@@ -163,6 +164,11 @@ Token.verify = async function (accessToken) {
 
         return CustomError.badRequest('Invalid Access Token!')
     }
+}
+
+Token.generateReferral = async function (id) {
+    const hash = createHmac('sha256', process.env.REFERRAL_SECRET_ID).update(id).digest('hex')
+    return hash.slice(0, 6).toUpperCase()
 }
 
 // sync database

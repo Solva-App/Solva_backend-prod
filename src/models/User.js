@@ -34,7 +34,7 @@ const userSchema = {
         type: STRING,
         allwNull: false,
     },
-    referral: {
+    referralCode: {
         type: STRING,
         allowNull: true,
     },
