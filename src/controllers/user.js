@@ -41,7 +41,7 @@ module.exports.createAccount = async function (req, res, next) {
         }
 
         if (body.referral) {
-            const referral = await User.findOne({ where: { referral: body.referral } })
+            const referral = await User.findOne({ where: { referralCode: body.referral } })
             if (!referral) return next(CustomError.badRequest('Invalid referral code'))
             body.referral = referral.id // asign the id of the referral to the user's data
 
