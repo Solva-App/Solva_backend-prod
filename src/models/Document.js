@@ -1,15 +1,19 @@
 const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
-const { STRING, INTEGER } = DataTypes
+const { STRING, INTEGER, BOOLEAN } = DataTypes
 
 const documentSchema = {
     model: {
         type: STRING,
         allowNull: true,
     },
+    owner: {
+        type: INTEGER,
+        allowNull: true,
+    },
     modelId: {
         type: INTEGER,
-        allowNull: false,
+        allowNull: true,
     },
     url: {
         type: STRING,
@@ -18,6 +22,14 @@ const documentSchema = {
     size: {
         type: INTEGER,
         allowNull: false,
+    },
+    requiresApproval: {
+        type: BOOLEAN,
+        defaultValue: true,
+    },
+    status: {
+        type: STRING,
+        defaultValue: 'awaiting-approval',
     },
 }
 
