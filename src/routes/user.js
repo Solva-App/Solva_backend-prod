@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { fileParser } = require('../middlewares')
 const { auth, isAdmin } = require('../middlewares/auth')
 const controllers = require('./../controllers/user')
 
@@ -14,6 +15,7 @@ router.patch('/', controllers.updateProfile)
 
 router.use(isAdmin) // ensure only admins  gets access to the below endpoints
 router.get('/all', controllers.getAllUsers)
+router.get('/:id', controllers.getUserById)
 router.patch('/flag/:id', controllers.flagUsers)
 router.patch('/unflag/:id', controllers.unFlagUsers)
 
