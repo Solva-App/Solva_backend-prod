@@ -5,6 +5,7 @@ const firebase = require('./../helpers/firebase')
 const Project = require('../models/Project')
 const Document = require('../models/Document')
 const { OK } = require('http-status-codes')
+const { where } = require('sequelize')
 
 // create
 module.exports.createProject = async function (req, res, next) {
@@ -53,9 +54,12 @@ module.exports.createProject = async function (req, res, next) {
             body.documents.map((d) => {
                 return {
                     model: 'project',
+                    owner: req.user.id,
                     modelId: project.id,
                     url: d.url,
                     size: d.size,
+                    requiresApproval: false,
+                    status: 'approved',
                 }
             })
         )
