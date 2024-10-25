@@ -68,6 +68,14 @@ const User = sequelize.define('User', userSchema, {
             user.password = await bcrypt.hash(user.password, Number(process.env.PASSWORD_HASH))
             if (user.pin) user.pin = await bcrypt.hash(user.pin, Number(process.env.PIN_HASH))
         },
+        afterFind(users) {
+            users = Array.isArray(users) ? users : [users]
+
+            users.forEach((user) => {
+                if (!user) return
+                user.balance = Number(user.balance)
+            })
+        },
         beforeSave: () => {},
     },
 })
