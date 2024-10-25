@@ -31,6 +31,9 @@ const grantRoutes = require('./routes/grant')
 const scholarshipRoutes = require('./routes/scholarship')
 const projectRoutes = require('./routes/project')
 const questionRoutes = require('./routes/question')
+const documentRoutes = require('./routes/document')
+const cashoutRequestRoutes = require('./routes/cashout')
+const freelancerRoutes = require('./routes/freelancer')
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -45,6 +48,9 @@ app.use('/api/v1/grants', grantRoutes)
 app.use('/api/v1/scholarships', scholarshipRoutes)
 app.use('/api/v1/projects', projectRoutes)
 app.use('/api/v1/questions', questionRoutes)
+app.use('/api/v1/documents', documentRoutes)
+app.use('/api/v1/cashouts', cashoutRequestRoutes)
+app.use('/api/v1/freelancers', freelancerRoutes)
 
 app.use(function (_req, res, _next) {
     return res.status(404).json({
