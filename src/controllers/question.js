@@ -39,7 +39,7 @@ module.exports.createPastQuestion = async function (req, res, next) {
         for (const file of files.documents) {
             const upload = await firebase.fileUpload(file, file.fieldname)
             if (upload instanceof CustomError) {
-                return next(body.documents)
+                return next(upload)
             }
             body[file.fieldname].push({
                 size: file.size,
@@ -57,9 +57,12 @@ module.exports.createPastQuestion = async function (req, res, next) {
             body.documents.map((d) => {
                 return {
                     model: 'question',
+                    owner: req.user.id,
                     modelId: question.id,
                     url: d.url,
                     size: d.size,
+                    status: 'approved',
+                    requiresApproval: false,
                 }
             })
         )
