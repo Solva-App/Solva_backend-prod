@@ -5,6 +5,9 @@ const User = require('../models/User')
 const { CREATED, OK } = require('http-status-codes')
 const Token = require('../models/Token')
 const redis = require('./../helpers/redis')
+const image = require('./../helpers/image')
+const firebase = require('./../helpers/firebase')
+const Freelancer = require('../models/Freelancer')
 
 module.exports.createAccount = async function (req, res, next) {
     try {
@@ -128,7 +131,25 @@ module.exports.getUser = async function (req, res, next) {
                 ...req.user.dataValues,
                 prefix: getPrefix(),
                 password: undefined,
+                freelancer: await Freelancer.findOne({ where: { owner: req.user.id } }),
             },
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.getUserById = async function (req, res, next) {
+    try {
+        const user = await User.findByPk(req.params.id)
+        if (!user) {
+            return next(CustomError.badRequest('User does not exit'))
+        }
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'User data fetched successfully',
+            data: user,
         })
     } catch (error) {
         return next({ error })
