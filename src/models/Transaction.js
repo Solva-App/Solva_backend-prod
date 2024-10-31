@@ -7,6 +7,14 @@ const transactionSchema = {
         type: INTEGER,
         allowNull: false,
     },
+    success: {
+        type: BOOLEAN,
+        allowNull: false,
+    },
+    status: {
+        type: STRING,
+        allowNull: false,
+    },
     reference: {
         type: STRING,
         allowNull: false,
