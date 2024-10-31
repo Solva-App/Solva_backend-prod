@@ -1,25 +1,16 @@
+const { OK } = require('http-status-codes')
 const Transaction = require('../models/Transaction')
 const User = require('../models/User')
+const event = require('./../events/paystack')
 
 module.exports.paystackTransactionWebhook = async function (req, res, next) {
     try {
-        const { status, data, message } = req.body
-        status = status.toLowerCase()
-
-        const user = await User.findOne({ where: { email: data.customer.email } })
-
-        const transaction = await Transaction.create({
-            owner: user.id,
-            reference: data.reference,
-            status: status,
-            success: status === 'success',
-            verified: true,
-            amount: data.amount / 100,
-        })
-
+        const { data, event: eventString } = req.body
+        console.log(eventString)
+        return event.emit(eventString, event, data, req, res, next)
         // validate the rest
-        // and initiate the time cron operation for consitent charge
     } catch (error) {
+        console.log(error)
         return next({ error })
     }
 }
