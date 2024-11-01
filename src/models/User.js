@@ -58,6 +58,26 @@ const userSchema = {
         type: DECIMAL(20, 3),
         defaultValue: 0,
     },
+    chargeChannel: {
+        type: STRING,
+        allowNull: true,
+    },
+    chargeAuthCode: {
+        type: STRING,
+        allowNull: true,
+    },
+    lastSubscriptionPlan: {
+        type: STRING,
+        allowNull: true,
+    },
+    autoCharge: {
+        type: BOOLEAN,
+        defaultValue: false,
+    },
+    lastSubscriptionExpiresAt: {
+        type: DATE,
+        allowNull: true,
+    },
 }
 
 const User = sequelize.define('User', userSchema, {
