@@ -10,18 +10,13 @@ const event = new EventEmitter()
 event.on('charge.success', async function (_event, data, req, res, next) {
     try {
         const date = new Date()
-        // date.setMonth(date.getMonth() + data.metadata.type === 'premium' ? 3 : 1)
-        date.setMinutes(date.getMinutes() + 5)
+        date.setMonth(date.getMonth() + data.metadata.type === 'premium' ? 3 : 1)
 
         const user = await User.findOne({ where: { email: data.customer.email } })
         user.chargeAuthCode = data.authorization.authorization_code
         user.lastSubscriptionExpiresAt = date // set this to be the next 3 month
         user.lastSubscriptionPlan = data.metadata.type
         user.chargeChannel = data.channel.toLowerCase()
-        user.chargeRef = await Token.generateReferral(String(Math.random() * 10000 + Date.now()))
-        user.willChargeAgain = true
-
-        await user.save()
 
         await Transaction.create({
             owner: user.id,
@@ -33,7 +28,12 @@ event.on('charge.success', async function (_event, data, req, res, next) {
         })
 
         // initiate crod when for next charge if chanel is don via card
-        if (user.chargeChannel === 'card') await initiateSubscriptionScheduler(user)
+        if (user.chargeChannel === 'card') {
+            user.autoCharge = true
+            await initiateSubscriptionScheduler(user)
+        }
+
+        await user.save()
 
         res.sendStatus(OK)
     } catch (error) {
