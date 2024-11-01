@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
-const { STRING, INTEGER, BOOLEAN, TEXT } = DataTypes
+const { STRING, INTEGER, BOOLEAN, DECIMAL } = DataTypes
 
 const transactionSchema = {
     owner: {
@@ -20,7 +20,7 @@ const transactionSchema = {
         allowNull: false,
     },
     amount: {
-        type: DECIMAL(20, 9),
+        type: DECIMAL(20, 3),
         allowNull: true,
     },
     verified: {
