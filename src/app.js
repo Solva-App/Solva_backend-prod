@@ -1,15 +1,16 @@
 const express = require('express')
+require('dotenv').config()
 const cors = require('cors')
 const http = require('http')
 const morgan = require('morgan')
 const path = require('path')
 const socket = require('socket.io')
+const { initiateAllSubscriptionScheduler } = require('./services/scheduler.js')
 
-require('dotenv').config()
 // setup redis database connection
 require('./database/redis')
 // setup database connection
-require('./database/db.js').startDB([])
+require('./database/db.js').startDB([initiateAllSubscriptionScheduler])
 
 const app = express()
 const middlewares = require('./middlewares')
@@ -34,6 +35,8 @@ const questionRoutes = require('./routes/question')
 const documentRoutes = require('./routes/document')
 const cashoutRequestRoutes = require('./routes/cashout')
 const freelancerRoutes = require('./routes/freelancer')
+const subscriptionRoutes = require('./routes/subscription')
+const webhookRoutes = require('./routes/webhook')
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -51,6 +54,8 @@ app.use('/api/v1/questions', questionRoutes)
 app.use('/api/v1/documents', documentRoutes)
 app.use('/api/v1/cashouts', cashoutRequestRoutes)
 app.use('/api/v1/freelancers', freelancerRoutes)
+app.use('/api/v1/sub', subscriptionRoutes)
+app.use('/api/v1/webhooks', webhookRoutes)
 
 app.use(function (_req, res, _next) {
     return res.status(404).json({
