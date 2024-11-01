@@ -166,9 +166,9 @@ Token.verify = async function (accessToken) {
     }
 }
 
-Token.generateReferral = async function (id) {
+Token.generateReferral = async function (id, len = 6) {
     const hash = createHmac('sha256', process.env.REFERRAL_SECRET_ID).update(id).digest('hex')
-    return hash.slice(0, 6).toUpperCase()
+    return hash.slice(0, len).toUpperCase()
 }
 
 // sync database
