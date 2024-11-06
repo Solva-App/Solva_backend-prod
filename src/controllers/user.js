@@ -1,12 +1,9 @@
 const { Schema } = require('json-validace')
 const CustomError = require('../helpers/error')
-const { default: isEmail } = require('validator/lib/isEmail')
 const User = require('../models/User')
 const { CREATED, OK } = require('http-status-codes')
 const Token = require('../models/Token')
 const redis = require('./../helpers/redis')
-const image = require('./../helpers/image')
-const firebase = require('./../helpers/firebase')
 const Freelancer = require('../models/Freelancer')
 
 module.exports.createAccount = async function (req, res, next) {
@@ -161,7 +158,7 @@ module.exports.generateToken = async function (req, res, next) {
         const schema = new Schema({ refreshToken: { type: 'string', required: true } })
         const result = schema.validate(req.body)
         if (result.error) {
-            return next(CustomError.badRequest('Invalid request body'), result.error)
+            return next(CustomError.badRequest('Invalid request body', result.error))
         }
 
         const body = result.data
