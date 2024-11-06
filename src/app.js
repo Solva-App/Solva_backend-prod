@@ -37,6 +37,7 @@ const cashoutRequestRoutes = require('./routes/cashout')
 const freelancerRoutes = require('./routes/freelancer')
 const subscriptionRoutes = require('./routes/subscription')
 const webhookRoutes = require('./routes/webhook')
+const sliderRoutes = require('./routes/slider')
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -56,6 +57,7 @@ app.use('/api/v1/cashouts', cashoutRequestRoutes)
 app.use('/api/v1/freelancers', freelancerRoutes)
 app.use('/api/v1/sub', subscriptionRoutes)
 app.use('/api/v1/webhooks', webhookRoutes)
+app.use('/api/v1/slider', sliderRoutes)
 
 app.use(function (_req, res, _next) {
     return res.status(404).json({
