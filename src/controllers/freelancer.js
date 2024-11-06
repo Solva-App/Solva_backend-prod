@@ -146,3 +146,33 @@ module.exports.addComment = async function (req, res, next) {
         return next({ error })
     }
 }
+
+module.exports.getCatigories = async function (_req, res, next) {
+    try {
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'catigory fetched successfully',
+            data: [
+                {
+                    title: 'Graphic Design',
+                    description: 'Logo & Brand Identity, Gaming',
+                },
+                {
+                    title: 'Digital Marketing',
+                    description: 'Social Media, Marketing, SEO',
+                },
+                {
+                    title: 'Programming & Tech',
+                    description: 'Website Development, Maintainance',
+                },
+                {
+                    title: 'Video & Animation',
+                    description: 'Video Editing, Video Ads & Commercials',
+                },
+            ],
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
