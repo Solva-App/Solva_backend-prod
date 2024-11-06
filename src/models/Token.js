@@ -77,7 +77,7 @@ Token.generate = async function (user, notificationToken) {
 
 Token.generateAccessToken = (data) => {
     const accessTokenExpiresIn = new Date()
-    accessTokenExpiresIn.setHours(accessTokenExpiresIn.getHours() + 24)
+    accessTokenExpiresIn.getMinutes(accessTokenExpiresIn.getMinutes() + 30)
     return {
         token: jsonwebtoken.sign(data, process.env.JWT_ACCESS_TOKEN_SECRET, { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIERATION }),
         expiresIn: accessTokenExpiresIn,
@@ -86,7 +86,7 @@ Token.generateAccessToken = (data) => {
 
 Token.generateRefreshToken = (data) => {
     const refreshTokenExpiresIn = new Date()
-    refreshTokenExpiresIn.setMinutes(refreshTokenExpiresIn.getMinutes() + 30)
+    refreshTokenExpiresIn.setHours(refreshTokenExpiresIn.getHours() + 24 * 3) // this will expire in 3 days
 
     return {
         token: jsonwebtoken.sign(data, process.env.JTW_REFRESH_TOKEN_SECRET, { expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIERATION }),
