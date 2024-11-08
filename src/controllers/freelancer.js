@@ -11,7 +11,7 @@ module.exports.becomeFreelancer = async function (req, res, next) {
     try {
         const schema = new Schema({
             fullName: { type: 'string', required: true },
-            category: { type: 'string', required: true },
+            categoryId: { type: 'string', required: true },
             bio: { type: 'string', required: true },
             startingAmount: { type: 'string', required: true },
             portfolioLink: { type: 'string', required: true },
@@ -76,7 +76,9 @@ module.exports.becomeFreelancer = async function (req, res, next) {
 
 module.exports.getFreelancers = async function (req, res, next) {
     try {
-        const freelancers = await Freelancer.findAll({})
+        const query = req.query.category != undefined ? { categoryId: Number(req.query.category) } : {}
+        const freelancers = await Freelancer.findAll({ where: query })
+
         res.status(OK).json({
             success: true,
             status: res.statusCode,
@@ -155,18 +157,22 @@ module.exports.getCatigories = async function (_req, res, next) {
             message: 'catigory fetched successfully',
             data: [
                 {
+                    id: 1,
                     title: 'Graphic Design',
                     description: 'Logo & Brand Identity, Gaming',
                 },
                 {
+                    id: 2,
                     title: 'Digital Marketing',
                     description: 'Social Media, Marketing, SEO',
                 },
                 {
+                    id: 3,
                     title: 'Programming & Tech',
                     description: 'Website Development, Maintainance',
                 },
                 {
+                    id: 4,
                     title: 'Video & Animation',
                     description: 'Video Editing, Video Ads & Commercials',
                 },
