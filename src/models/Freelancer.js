@@ -11,8 +11,8 @@ const freelancerSchema = {
         type: STRING,
         allowNull: false,
     },
-    category: {
-        type: STRING,
+    categoryId: {
+        type: INTEGER,
         allowNull: false,
     },
     bio: {
