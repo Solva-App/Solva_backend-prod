@@ -3,7 +3,8 @@ const { fileParser } = require('../middlewares')
 const { auth, isAdmin } = require('../middlewares/auth')
 const controllers = require('./../controllers/question')
 
-router.get('/', controllers.getPastQuestion)
+router.get('/:id', controllers.getPastQuestion)
+router.get('/', controllers.getpastQuestions)
 
 router.use(auth)
 router.use(isAdmin)
