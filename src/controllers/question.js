@@ -6,6 +6,7 @@ const Project = require('../models/Project')
 const Document = require('../models/Document')
 const { OK } = require('http-status-codes')
 const Question = require('../models/Question')
+const { Op } = require('sequelize')
 
 module.exports.createPastQuestion = async function (req, res, next) {
     try {
@@ -75,6 +76,40 @@ module.exports.createPastQuestion = async function (req, res, next) {
                 question,
                 documents,
             },
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.getpastQuestions = async function (req, res, next) {
+    try {
+        let body
+
+        if (req.query.search) {
+            body = {
+                where: {
+                    // ...req.body.filter,
+                    [Op.or]: [{ title: { [Op.like]: `%${req.query.search}%` } }, { university: { [Op.like]: `%${req.query.search}%` } }, { faculty: { [Op.like]: `%${req.query.search}%` } }, { department: { [Op.like]: `%${req.query.search}%` } }, { courseCode: { [Op.like]: `%${req.query.search}%` } }],
+                },
+            }
+        } else {
+            body = {}
+        }
+
+        let questions = await Question.findAll(body)
+        questions = questions.map(async (question) => {
+            const docs = await Document.findAll({ where: { model: 'question', modelId: question.id } })
+            return {
+                question: question,
+                document: docs,
+            }
+        })
+
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            data: await Promise.all(questions),
         })
     } catch (error) {
         return next({ error })
