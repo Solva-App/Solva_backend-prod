@@ -59,7 +59,8 @@ app.use('/api/v1/sub', subscriptionRoutes)
 app.use('/api/v1/webhooks', webhookRoutes)
 app.use('/api/v1/slider', sliderRoutes)
 
-app.use(function (_req, res, _next) {
+app.use(function (req, res, _next) {
+    console.log(req.query)
     return res.status(404).json({
         message: 'Resources not found ☹️☹️',
         status: 404,
