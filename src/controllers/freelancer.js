@@ -82,7 +82,7 @@ module.exports.getFreelancers = async function (req, res, next) {
         res.status(OK).json({
             success: true,
             status: res.statusCode,
-            message: '',
+            message: 'freelancers fetched successfully',
             data: freelancers,
         })
     } catch (error) {
