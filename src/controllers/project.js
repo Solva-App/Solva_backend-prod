@@ -5,7 +5,7 @@ const firebase = require('./../helpers/firebase')
 const Project = require('../models/Project')
 const Document = require('../models/Document')
 const { OK } = require('http-status-codes')
-const { where } = require('sequelize')
+const { Op } = require('sequelize')
 
 // create
 module.exports.createProject = async function (req, res, next) {
@@ -80,7 +80,21 @@ module.exports.createProject = async function (req, res, next) {
 
 module.exports.getProjects = async function (req, res, next) {
     try {
-        let projects = await Project.findAll()
+        let body
+
+        if (req.query.search) {
+            body = {
+                where: {
+                    // ...req.body.filter,
+                    [Op.or]: [{ name: { [Op.like]: `%${req.query.search}%` } }, { description: { [Op.like]: `%${req.query.search}%` } }],
+                },
+            }
+        } else {
+            body = {}
+        }
+
+        let projects = await Project.findAll(body)
+
         projects = projects.map(async (project) => {
             const docs = await Document.findAll({ where: { model: 'project', modelId: project.id } })
             return {
@@ -88,7 +102,6 @@ module.exports.getProjects = async function (req, res, next) {
                 document: docs,
             }
         })
-        console.log(projects)
 
         res.status(OK).json({
             success: true,
