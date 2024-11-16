@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: solvaafrica
+    ports:
+      - "3002:3002"
+    environment:
+      - REDIS_ENDPOINT_URL=redis
+      - REDIS_PASSWORD=
+      - REDIS_PORT=6379
+      - REDIS_USERNAME=
+      - REDIS_AUTH_EXPIRATION_TIME=600000
+      - BASE_URL=http://localhost:3200
+      - TIME_ZONE=Africa/Lagos
+      - DATABASE_NAME=solva
+      - DATABASE_USERNAME=root
+      - DATABASE_PASSWORD=rootpassword
+      - DATABASE_HOSTNAME=mysql
+      - PORT=3002
+      - JTW_REFRESH_TOKEN_SECRET=com.solva.ng.refresh
+      - JWT_ACCESS_TOKEN_SECRET=com.solva.ng.access
+      - JWT_ACCESS_TOKEN_EXPIERATION=30m
+      - JWT_REFRESH_TOKEN_EXPIERATION=3d
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=465
+      - EMAIL_SERVICE=true
+      - SECURITY_EMAIL_ADDRESS=solvaapp@gmail.com
+      - SECURITY_EMAIL_PASSWORD="pbss rbkl xeoi ctdo"
+      - REFERRAL_SECRET_ID=sdlfksldkfjslkj
+      - PAYSTACK_SECRET=sk_test_b27efd3287cbf41fe9859fc2cd46eb958e41e7ba
+      - PAYSTACK_BASEURL=https://api.paystack.co
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - mysql
+      - redis
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: solva
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql-data:
