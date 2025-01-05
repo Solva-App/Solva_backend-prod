@@ -16,6 +16,7 @@ module.exports.generateLink = async function (req, res, next) {
             amount: amount * 100,
             email: req.user.email,
             full_name: req.user.fullName,
+            callback_url: req.params.callback.toLowerCase().trim() ?? undefined,
             channels: ['card'],
             metadata: JSON.stringify({
                 id: req.user.id,
