@@ -11,12 +11,13 @@ module.exports.generateLink = async function (req, res, next) {
         }
 
         const amount = req.params.plan === 'premium' ? 1999 : 999
+        const callback = req.params.callback
 
         const link = await paystack.generatePaymentLink({
             amount: amount * 100,
             email: req.user.email,
             full_name: req.user.fullName,
-            callback_url: req.params.callback.toLowerCase().trim() ?? undefined,
+            callback_url: callback ? callback.toLowerCase().trim() : undefined,
             channels: ['card'],
             metadata: JSON.stringify({
                 id: req.user.id,
