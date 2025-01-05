@@ -11,7 +11,7 @@ module.exports.generateLink = async function (req, res, next) {
         }
 
         const amount = req.params.plan === 'premium' ? 1999 : 999
-        const callback = req.params.callback
+        const callback = req.query.callback
 
         const link = await paystack.generatePaymentLink({
             amount: amount * 100,
