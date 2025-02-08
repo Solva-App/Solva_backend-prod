@@ -90,7 +90,8 @@ module.exports.getpastQuestions = async function (req, res, next) {
             body = {
                 where: {
                     // ...req.body.filter,
-                    [Op.or]: [{ title: { [Op.like]: `%${req.query.search}%` } }, { university: { [Op.like]: `%${req.query.search}%` } }, { faculty: { [Op.like]: `%${req.query.search}%` } }, { department: { [Op.like]: `%${req.query.search}%` } }, { courseCode: { [Op.like]: `%${req.query.search}%` } }],
+                    [Op.or]: [
+                      { title: { [Op.like]: `%${req.query.search}%` } }, { university: { [Op.like]: `%${req.query.search}%` } }, { faculty: { [Op.like]: `%${req.query.search}%` } }, { department: { [Op.like]: `%${req.query.search}%` } }, { courseCode: { [Op.like]: `%${req.query.search}%` } }],
                 },
             }
         } else {
@@ -116,9 +117,21 @@ module.exports.getpastQuestions = async function (req, res, next) {
     }
 }
 
-module.exports.getPastQuestion = async function (_req, res, next) {
+module.exports.getPastQuestion = async function (req, res, next) {
     try {
-        let questions = await Project.findAll()
+
+        const schema = new Schema({
+            department: { type: 'string', required: true },
+            university: { type: 'string', required: true },
+            department: { type: 'string', required: true },
+            courseCode: { type: 'string', required: true },
+            faculty: { type: 'string', required: true },
+        })
+
+        let questions = await Question.findAll({
+          where: { ...req.query }
+        })
+
         questions = questions.map(async (question) => {
             const docs = await Document.findAll({ where: { model: 'question', modelId: question.id } })
             return {
@@ -132,6 +145,7 @@ module.exports.getPastQuestion = async function (_req, res, next) {
             status: res.statusCode,
             data: await Promise.all(questions),
         })
+
     } catch (error) {
         return next({ error })
     }
