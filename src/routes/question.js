@@ -4,7 +4,7 @@ const { auth, isAdmin } = require('../middlewares/auth')
 const controllers = require('./../controllers/question')
 
 router.get('/:id', controllers.getPastQuestion)
-router.get('/', controllers.getpastQuestions)
+router.get('/', controllers.getPastQuestions)
 
 router.use(auth)
 router.use(isAdmin)
