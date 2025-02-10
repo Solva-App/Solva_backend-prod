@@ -41,9 +41,9 @@ const sliderRoutes = require('./routes/slider')
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
-app.use(function (req, _res, next) {
-    req.baseUrl = `${req.protocol}://${req.headers['host']}`
-    next()
+app.use(function(req, _res, next) {
+      req.baseUrl = `${req.protocol}://${req.headers['host']}`
+      next()
 })
 
 app.use('/api/v1/users', userRoutes)
@@ -59,13 +59,13 @@ app.use('/api/v1/sub', subscriptionRoutes)
 app.use('/api/v1/webhooks', webhookRoutes)
 app.use('/api/v1/slider', sliderRoutes)
 
-app.use(function (req, res, _next) {
-    console.log(req.query)
-    return res.status(404).json({
-        message: 'Resources not found ☹️☹️',
-        status: 404,
-        success: false,
-    })
+app.use(function(req, res, _next) {
+      console.log(req.query)
+      return res.status(404).json({
+            message: 'Resources not found ☹️☹️',
+            status: 404,
+            success: false,
+      })
 })
 app.use(middlewares.errorHandler)
 
