@@ -1,13 +1,18 @@
 const storage = require('@firebase/storage')
 const app = require('@firebase/app')
-const firebaseKeys = require('../../firebase.json')
+// const firebaseKeys = require('../../.firebase.json')
+
+const firebase_env = process.env.FIREBASE_CONFIG
+
+const firebaseKeys = JSON.parse(firebase_env)
+
 const CustomError = require('./error')
 
 app.initializeApp(firebaseKeys.storage)
 
 const bucket = storage.getStorage()
 
-module.exports.fileUpload = async function(file, location) {
+module.exports.fileUpload = async function (file, location) {
       try {
             const metadata = { contentType: file.mimetype }
             const ref = storage.ref(bucket, `${location}/${Math.round(Math.random() * 1e9)}-${file.originalname} `)
