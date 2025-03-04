@@ -59,3 +59,20 @@ module.exports.disableSubscription = async function (req, res, next) {
         return next({ error })
     }
 }
+
+module.exports.getSubscriptionStatus = async (req, res, next) => {
+    try {
+        const user = await req.user;
+        const { lastSubscriptionPlan, lastSubscriptionExpiresAt } = user;
+
+        const now = new Date();
+        if (!lastSubscriptionPlan || !lastSubscriptionExpiresAt || lastSubscriptionExpiresAt < now) {
+            return res.status(200).json({ isSubscribed: false })
+        }
+
+        return res.status(200).json({ isSubscribed: true })
+
+    } catch (error) {
+        return next({ error })
+    }
+}

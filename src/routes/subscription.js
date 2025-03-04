@@ -4,6 +4,7 @@ const controllers = require('./../controllers/subscription')
 
 router.use(auth)
 router.get('/:plan/link', controllers.generateLink)
+router.get('/status', controllers.getSubscriptionStatus)
 router.post('/end/autocharge', controllers.disableSubscription)
 
 module.exports = router
