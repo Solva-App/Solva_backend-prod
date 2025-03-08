@@ -54,8 +54,8 @@ module.exports.uploadDocument = async function (req, res, next) {
           url: d.url,
           size: d.size,
           status: "awaiting-approval",
-          memetype: file.mimetype,
-          name: file.originalname,
+          memetype: d.mimetype,
+          name: d.originalname,
         };
       })
     );
@@ -105,7 +105,7 @@ module.exports.approveDocument = async function (req, res, next) {
 
 module.exports.getUploadedDocument = async function (req, res, next) {
   try {
-    const documents = await Document.findAll({
+    const document = await Document.findAll({
       where: {
         requiresApproval: true,
         status: "awaiting-approval",
@@ -113,9 +113,7 @@ module.exports.getUploadedDocument = async function (req, res, next) {
     });
 
     res.status(OK).json({
-      success: true,
-      status: res.statusCode,
-      data: documents,
+      data: document,
     });
   } catch (error) {
     return next({ error });
