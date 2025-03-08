@@ -121,13 +121,15 @@ module.exports.getPastQuestion = async function (req, res, next) {
       return next(CustomError.badRequest("Question does not exist"));
     }
 
+    const documents = await Document.findAll({ model: "question", modelId: question.id });
+
     res.status(OK).json({
       success: true,
       status: res.statusCode,
       message: "Question fetched successfully",
       data: {
         question,
-        documents: await Document.findAll({ model: "question", modelId: question.id }),
+        documents: documents,
       },
     });
   } catch (error) {
