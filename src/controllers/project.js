@@ -42,7 +42,7 @@ module.exports.createProject = async function(req, res, next) {
                     size: file.size,
                     url: upload,
                     name: file.originalname,
-                    mimtype: file.mimetype
+                    mimetype: file.mimetype
                })
           }
 
@@ -61,7 +61,7 @@ module.exports.createProject = async function(req, res, next) {
                          url: d.url,
                          size: d.size,
                          name: d.name,
-                         mimetype: d.mietype,
+                         mimetype: d.mimetype,
                          requiresApproval: false,
                          status: 'approved',
                     }
