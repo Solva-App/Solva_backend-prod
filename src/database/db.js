@@ -4,12 +4,13 @@ const databasename = process.env.DATABASE_NAME;
 const username = process.env.DATABASE_USERNAME;
 const password = process.env.DATABASE_PASSWORD;
 const hostAddress = process.env.DATABASE_HOSTNAME;
-
+const port = process.env.DATABASE_PORT;
 // Create the sequelize instance
 const sequelize = new Sequelize(databasename, username, password, {
       host: hostAddress,
       dialect: "mysql",
       logging: false,
+      port,
       pool: {
             max: 5,
             min: 0,
@@ -17,7 +18,7 @@ const sequelize = new Sequelize(databasename, username, password, {
       },
 });
 
-const startDB = async function(services) {
+const startDB = async function (services) {
       sequelize
             .sync(/* { alter: true } */)
             .then(async () => {

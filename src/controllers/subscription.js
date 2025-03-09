@@ -6,11 +6,11 @@ const { stopAutoCharge } = require('../services/scheduler')
 
 module.exports.generateLink = async function (req, res, next) {
     try {
-        if (!['premium', 'basic'].includes(req.params.plan)) {
+        if (!['premium', 'basic'].includes(req.params.plan.toLowerCase())) {
             return next(CustomError.badRequest('Please provide a proper plan'))
         }
 
-        const amount = req.params.plan === 'premium' ? 1999 : 999
+        const amount = req.params.plan.toLowerCase() === 'premium' ? 1999 : 999
         const callback = req.query.callback
 
         const link = await paystack.generatePaymentLink({
@@ -55,6 +55,23 @@ module.exports.disableSubscription = async function (req, res, next) {
             message: 'Stop Auto Charge',
             data: null,
         })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.getSubscriptionStatus = async (req, res, next) => {
+    try {
+        const user = await req.user;
+        const { lastSubscriptionPlan, lastSubscriptionExpiresAt } = user;
+
+        const now = new Date();
+        if (!lastSubscriptionPlan || !lastSubscriptionExpiresAt || lastSubscriptionExpiresAt < now) {
+            return res.status(200).json({ isSubscribed: false })
+        }
+
+        return res.status(200).json({ isSubscribed: true })
+
     } catch (error) {
         return next({ error })
     }
