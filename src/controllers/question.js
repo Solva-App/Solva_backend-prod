@@ -105,7 +105,7 @@ module.exports.getPastQuestions = async function(req, res, next) {
                const docs = await Document.findAll({ where: { model: "question", modelId: question.id } });
                return {
                     question: question,
-                    document: docs,
+                    document: docs
                };
           });
 
@@ -126,7 +126,7 @@ module.exports.getPastQuestion = async function(req, res, next) {
                return next(CustomError.badRequest("Question does not exist"));
           }
 
-          const documents = await Document.findAll({ model: "question", modelId: question.id });
+          const documents = await Document.findAll({ where: { model: "question", modelId: question.id } });
 
           res.status(OK).json({
                success: true,
