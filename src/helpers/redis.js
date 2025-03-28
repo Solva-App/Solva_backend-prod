@@ -3,7 +3,6 @@ const { client: client } = require('../database/redis')
 module.exports.setRedisData = async function (key, value) {
     await client.set(key, JSON.stringify(value))
     await client.expire(key, process.env.REDIS_AUTH_EXPIRATION_TIME)
-    console.log(value, 'saved to redis with key of:', key)
 }
 
 module.exports.deleteRedisData = async (key) => await client.del(key)
