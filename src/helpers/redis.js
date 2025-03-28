@@ -1,4 +1,4 @@
-const { client: client } = require('../database/redis')
+const { client: client } = require('../database/redis').default
 
 module.exports.setRedisData = async function (key, value) {
     await client.set(key, JSON.stringify(value))
