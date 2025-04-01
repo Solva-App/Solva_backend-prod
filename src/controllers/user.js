@@ -442,7 +442,7 @@ module.exports.getUserBalance = async function (req, res, next) {
             success: true,
             status: res.statusCode,
             message: 'Get user balance',
-            data: userBalance,
+            data: { balance: userBalance },
         })
     } catch (error) {
         return next({ error })
