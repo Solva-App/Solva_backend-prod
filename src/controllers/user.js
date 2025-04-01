@@ -428,3 +428,23 @@ module.exports.unFlagUsers = async function (req, res, next) {
         return next({ error })
     }
 }
+
+
+// GET user balance
+module.exports.getUserBalance = async function (req, res, next) {
+    try {
+        const user = await User.findOne({ attributes: ['balance'], where: { id: req.params.id } });
+        if (!user) {
+            return next(CustomError.badRequest('Invalid user id'))
+        }
+        const userBalance = user.balance;
+        return res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'Get user balance',
+            data: userBalance,
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
