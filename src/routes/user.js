@@ -11,14 +11,14 @@ router.get('/update/password/:reference', controllers.manageForgottenPasswordCal
 router.patch('/update/forgotten/password', controllers.updateForgottenPassword)
 
 router.use(auth)
-
 router.get('/', controllers.getUser)
-router.patch('/users/update/password', controllers.updatePassword)
+router.patch('/update/password', controllers.updatePassword)
 router.patch('/', controllers.updateProfile)
+router.get('/balance/:id', controllers.getUserBalance)
+router.get('/:id', controllers.getUserById)
 
 router.use(isAdmin) // ensure only admins  gets access to the below endpoints
 router.get('/all', controllers.getAllUsers)
-router.get('/:id', controllers.getUserById)
 router.patch('/flag/:id', controllers.flagUsers)
 router.patch('/unflag/:id', controllers.unFlagUsers)
 
