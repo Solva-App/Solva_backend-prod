@@ -9,8 +9,9 @@ const event = new EventEmitter()
 
 event.on('charge.success', async function (_event, data, req, res, next) {
     try {
+        const monthsToAdd = data?.metadata?.type === 'basic' ? 1 : 3;
         const date = new Date()
-        date.setMonth(date.getMonth() + data?.metadata?.type === 'basic' ? 1 : 3)
+        date.setMonth(date.getMonth() + monthsToAdd);
 
         const user = await User.findOne({ where: { email: data.customer.email } })
         user.chargeAuthCode = data.authorization.authorization_code
