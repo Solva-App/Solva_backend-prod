@@ -197,132 +197,132 @@ module.exports.generateToken = async function (req, res, next) {
   }
 };
 
-module.exports.sendForgottenPasswordVerificationOtp = async function (
-  req,
-  res,
-  next,
-) {
-  try {
-    const schema = new Schema({
-      callback: { type: "string", required: true },
-      email: { type: "email", required: true },
-    });
+// module.exports.sendForgottenPasswordVerificationOtp = async function (
+//   req,
+//   res,
+//   next,
+// ) {
+//   try {
+//     const schema = new Schema({
+//       callback: { type: "string", required: true },
+//       email: { type: "email", required: true },
+//     });
 
-    const r = schema.validate(req.body);
-    if (r.error) {
-      return next(CustomError.badRequest("Invalid request body", r.error));
-    }
+//     const r = schema.validate(req.body);
+//     if (r.error) {
+//       return next(CustomError.badRequest("Invalid request body", r.error));
+//     }
 
-    const body = r.data;
+//     const body = r.data;
 
-    // check if user exist
-    const user = await User.findOne({ where: { email: req.body.email } });
+//     // check if user exist
+//     const user = await User.findOne({ where: { email: req.body.email } });
 
-    if (user) {
-      // generate reference id
-      let reference = null;
-      const callback = req.body.callback;
+//     if (user) {
+//       // generate reference id
+//       let reference = null;
+//       const callback = req.body.callback;
 
-      // while (await redis.getRedisData(reference)) {
-      //     reference = `${uuid.v1()}`
-      // }
+//       // while (await redis.getRedisData(reference)) {
+//       //     reference = `${uuid.v1()}`
+//       // }
 
-      // saving email to redis
-      let url = encodeURI(
-        `${process.env.BASE_URL}/api/v1/users/update/password/${reference}?callback=${callback}`,
-      );
+//       // saving email to redis
+//       let url = encodeURI(
+//         `${process.env.BASE_URL}/api/v1/users/update/password/${reference}?callback=${callback}`,
+//       );
 
-      await redis.setRedisData(
-        reference,
-        {
-          ...req.body,
-          url: url,
-          callback: req.body.callback,
-        },
-        60 * 20, // set to expire in 20 minute
-      );
+//       await redis.setRedisData(
+//         reference,
+//         {
+//           ...req.body,
+//           url: url,
+//           callback: req.body.callback,
+//         },
+//         60 * 20, // set to expire in 20 minute
+//       );
 
-      emailVerification({
-        url: url,
-        user: user,
-        ...req.body,
-      });
-    }
+//       emailVerification({
+//         url: url,
+//         user: user,
+//         ...req.body,
+//       });
+//     }
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      status: res.statusCode,
-      message: "Email sent to recipient",
-      data: null,
-    });
-  } catch (error) {
-    return next({ error });
-  }
-};
+//     res.status(StatusCodes.OK).json({
+//       success: true,
+//       status: res.statusCode,
+//       message: "Email sent to recipient",
+//       data: null,
+//     });
+//   } catch (error) {
+//     return next({ error });
+//   }
+// };
 
-module.exports.manageForgottenPasswordCallback = async function (
-  req,
-  res,
-  next,
-) {
-  try {
-    const reference = req.params.reference;
-    const callback = req.query.callback;
-    const url = `${callback}?reference=${reference}`;
+// module.exports.manageForgottenPasswordCallback = async function (
+//   req,
+//   res,
+//   next,
+// ) {
+//   try {
+//     const reference = req.params.reference;
+//     const callback = req.query.callback;
+//     const url = `${callback}?reference=${reference}`;
 
-    //verify url
-    const data = await redis.getRedisData(reference);
-    console.log(data);
-    if (!data) {
-      return next(CustomError.badRequest("Invalid or expired url"));
-    }
+//     //verify url
+//     const data = await redis.getRedisData(reference);
+//     console.log(data);
+//     if (!data) {
+//       return next(CustomError.badRequest("Invalid or expired url"));
+//     }
 
-    res.status(statusCode.OK).redirect(url);
-  } catch (error) {
-    return next(error);
-  }
-};
+//     res.status(statusCode.OK).redirect(url);
+//   } catch (error) {
+//     return next(error);
+//   }
+// };
 
-module.exports.updateForgottenPassword = async function (req, res, next) {
-  try {
-    const schema = new Schema({
-      reference: { type: "string", required: true },
-      newPassword: { type: "string", required: true },
-    });
+// module.exports.updateForgottenPassword = async function (req, res, next) {
+//   try {
+//     const schema = new Schema({
+//       reference: { type: "string", required: true },
+//       newPassword: { type: "string", required: true },
+//     });
 
-    const r = schema.validate(req.body);
-    if (r.error) {
-      return next(CustomError.badRequest("Invalid request body", r.error));
-    }
+//     const r = schema.validate(req.body);
+//     if (r.error) {
+//       return next(CustomError.badRequest("Invalid request body", r.error));
+//     }
 
-    const body = r.data;
+//     const body = r.data;
 
-    // validate the validate reference
-    const referenceData = await redis.getRedisData(body.reference);
-    if (!referenceData) {
-      return next(CustomError.badRequest("Invalid or expired reference ID"));
-    }
+//     // validate the validate reference
+//     const referenceData = await redis.getRedisData(body.reference);
+//     if (!referenceData) {
+//       return next(CustomError.badRequest("Invalid or expired reference ID"));
+//     }
 
-    const user = await User.findOne({ where: { email: referenceData.email } });
-    // change the password
-    user.password = body.newPassword;
-    console.log(user);
-    await user.encrypt();
-    await user.save();
+//     const user = await User.findOne({ where: { email: referenceData.email } });
+//     // change the password
+//     user.password = body.newPassword;
+//     console.log(user);
+//     await user.encrypt();
+//     await user.save();
 
-    // delete redis reference
-    await redis.deleteRedisData(body.reference);
+//     // delete redis reference
+//     await redis.deleteRedisData(body.reference);
 
-    return res.status(OK).send({
-      message: "Password changed succssfully!",
-      success: true,
-      status: res.statusCode,
-      data: null,
-    });
-  } catch (error) {
-    return next({ error });
-  }
-};
+//     return res.status(OK).send({
+//       message: "Password changed succssfully!",
+//       success: true,
+//       status: res.statusCode,
+//       data: null,
+//     });
+//   } catch (error) {
+//     return next({ error });
+//   }
+// };
 
 module.exports.updatePassword = async function (req, res, next) {
   try {
