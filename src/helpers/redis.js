@@ -1,13 +1,19 @@
-const { client: client } = require('../database/redis').default
+const {redisClient} = require('../database/redis')
 
 module.exports.setRedisData = async function (key, value) {
-    await client.set(key, JSON.stringify(value))
-    await client.expire(key, process.env.REDIS_AUTH_EXPIRATION_TIME)
+    await redisClient.set(key, JSON.stringify(value))
+    await redisClient.expire(key, process.env.REDIS_AUTH_EXPIRATION_TIME)
 }
 
-module.exports.deleteRedisData = async (key) => await client.del(key)
+module.exports.deleteRedisData = async function (key) {
+    await redisClient.del(key)
+} 
 
-module.exports.getRedisData = async (key) => {
-    const result = await client.get(key)
-    return JSON.parse(result)
+module.exports.getRedisData = async function (key){
+    let result = await redisClient.get(key);
+
+    if(result){
+        return JSON.parse(result);
+    }
+    return null;
 }
