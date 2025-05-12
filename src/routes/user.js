@@ -9,12 +9,6 @@ router.post("/generate/token", controllers.generateToken);
 router.post("/forgotten/password/otp", controllers.sendForgotPasswordOTP);
 router.post("/forgotten/password/reset", controllers.resetForgottenPassword);
 
-router.get(
-  "/update/password/:reference",
-  controllers.manageForgottenPasswordCallback,
-);
-router.patch("/update/forgotten/password", controllers.updateForgottenPassword);
-
 router.use(auth);
 router.get("/", controllers.getUser);
 router.patch("/update/password", controllers.updatePassword);
