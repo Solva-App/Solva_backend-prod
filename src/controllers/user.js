@@ -436,6 +436,7 @@ module.exports.sendForgotPasswordOTP = async function (req, res, next) {
 
     res.status(200).json({
       message: "An OTP has been sent to the email " + email,
+      userId: user.id,
     });
   } catch (error) {
     console.log("Failed to update forgot password\n", error);
