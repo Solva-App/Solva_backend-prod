@@ -158,7 +158,7 @@ module.exports.getUserById = async function (req, res, next) {
     if (!user) {
       return next(CustomError.badRequest("User does not exit"));
     }
-    res.status(StatusCodes.OK).json({
+    res.status(200).json({
       success: true,
       status: res.statusCode,
       message: "User data fetched successfully",
@@ -186,7 +186,7 @@ module.exports.generateToken = async function (req, res, next) {
       return next(tokens);
     }
 
-    res.status(StatusCodes.OK).json({
+    res.status(200).json({
       success: true,
       status: res.statusCode,
       data: tokens,
@@ -219,7 +219,7 @@ module.exports.updatePassword = async function (req, res, next) {
     await req.user.encrypt();
     await req.user.save();
 
-    return res.status(StatusCodes.OK).send({
+    return res.status(200).json({
       message: "Password changed succssfully!",
       success: true,
       status: res.statusCode,
@@ -293,7 +293,7 @@ module.exports.updateProfile = async function (req, res, next) {
     await req.user.save();
 
     // send response
-    res.status(StatusCodes.OK).send({
+    res.status(200).json({
       message: "profile changed successfully",
       success: true,
       status: res.statusCode,
@@ -353,11 +353,12 @@ module.exports.getUserBalance = async function (req, res, next) {
       attributes: ["balance"],
       where: { id: req.params.id },
     });
+    console.log("User balance", user);
     if (!user) {
       return next(CustomError.badRequest("Invalid user id"));
     }
     const userBalance = user.balance;
-    return res.status(OK).json({
+    return res.status(200).json({
       success: true,
       status: res.statusCode,
       message: "Get user balance",
@@ -409,7 +410,8 @@ module.exports.sendForgotPasswordOTP = async function (req, res, next) {
     const expirationDate = new Date();
     expirationDate.setMinutes(expirationDate.getMinutes() + 30);
 
-    const freshOtp = await OtpModel.create({
+    // store new otp in db
+    await OtpModel.create({
       userId: user.id,
       otp,
       intent: "Forgot password",
