@@ -8,6 +8,7 @@ router.post("/login", controllers.login);
 router.post("/generate/token", controllers.generateToken);
 router.post("/forgotten/password/otp", controllers.sendForgotPasswordOTP);
 router.post("/forgotten/password/reset", controllers.resetForgottenPassword);
+router.get("/referrals/:userId", controllers.getUserReferrals);
 
 router.use(auth);
 router.get("/", controllers.getUser);

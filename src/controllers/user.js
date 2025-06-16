@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
 const bcrypt = require("bcryptjs");
+const { HttpStatusCode } = require("axios");
 
 module.exports.createAccount = async function (req, res, next) {
   try {
@@ -504,5 +505,25 @@ module.exports.resetForgottenPassword = async function (req, res, next) {
     res.status(200).send("Password updated successfully");
   } catch (error) {
     console.log(error);
+  }
+};
+
+// GET user referrals
+module.exports.getUserReferrals = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+
+    if (!userId)
+      return next(CustomError.badRequest("Missing user id parameter"));
+
+    const referralUsers = await User.findAll({
+      where: { referral: userId },
+      attributes: ["fullName", "email"],
+    });
+
+    return res.status(HttpStatusCode.Ok).json({ data: { referralUsers } });
+  } catch (error) {
+    console.log("Failed to get referral users\n", error);
+    res.status(500).json({ error: "Something went wrong, please retry" });
   }
 };
