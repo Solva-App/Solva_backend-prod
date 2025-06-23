@@ -8,9 +8,9 @@ Ensure you have docker installed and running on your development machine
 
 ## Seeting up the server
 
-Clone the server repo to your local machine usinig Git:
+Fork the server repo to your local machine usinig Git:
 
-`https://github.com/bytegrn/solva-backend.git`
+`https://github.com/bytegrn/Solva_backend-prod`
 
 `cd` solva-backend
 
