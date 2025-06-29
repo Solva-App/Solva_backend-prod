@@ -11,5 +11,6 @@ router.post('/create', fileParser.single('profilePic'), controllers.becomeFreela
 router.get('/', controllers.getFreelancers)
 router.get('/catigories', controllers.getCatigories)
 router.get('/:id', controllers.getFreelancer)
+router.put('/edit', fileParser.single('profilePic'), controllers.editFreelancerProfile)
 
 module.exports = router

@@ -128,6 +128,85 @@ module.exports.getFreelancer = async function (req, res, next) {
   }
 };
 
+module.exports.editFreelancerProfile = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      fullName: { type: "string", required: false },
+      categoryId: { type: "string", required: false },
+      bio: { type: "string", required: false },
+      startingAmount: { type: "string", required: false },
+      portfolioLink: { type: "string", required: false },
+      phoneNumber: { type: "string", required: false },
+      whatsappLink: { type: "string", required: false },
+      profilePic: {
+        type: "object",
+        required: false,
+        $_data: {
+          fieldname: "string",
+          originalname: "string",
+          encoding: "string",
+          mimetype: "string",
+          buffer: "object",
+          size: "number",
+          base64String: "string",
+        },
+      },
+    });
+
+    let { user, body, file } = req;
+
+    if (body?.profilePic?.length || file) {
+      body.profilePic = await image.modifyStringImageFile(
+        body?.profilePic?.length ? body.profilePic : file,
+      );
+    } else {
+      delete body.profilePic;
+    }
+
+    const result = schema.validate(body);
+    if (result.error) {
+      return next(CustomError.badRequest("Invalid request body", result.error));
+    }
+
+    if (user.isAdmin) {
+      return next(
+        CustomError.unauthorizedRequest(
+          "Admins are restricted from using this endpoint",
+        ),
+      );
+    }
+
+    const freelancer = await Freelancer.findOne({ where: { owner: req.user.id } });
+
+    if (!freelancer) {
+      return next(CustomError.notFound("Freelancer profile not found. Please create one first."));
+    }
+
+    if (file) {
+      const link = await firebase.fileUpload(file, file.fieldname);
+      if (link instanceof CustomError) {
+        return next(link);
+      }
+      body.profilePic = link;
+    }
+
+    Object.keys(body).forEach(key => {
+      freelancer[key] = body[key];
+    });
+
+    await freelancer.save();
+
+    res.status(HttpStatusCode.Ok).json({
+      success: true,
+      status: res.statusCode,
+      message: "Freelancer profile updated successfully",
+      data: freelancer,
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
 module.exports.addComment = async function (req, res, next) {
   try {
     const schema = new Schema({
