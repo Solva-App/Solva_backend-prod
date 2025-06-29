@@ -69,8 +69,8 @@ module.exports.createPastQuestion = async function(req, res, next) {
                          mimetype: d.mimetype,
                          name: d.name,
                          size: d.size,
-                         status: "approved",
-                         requiresApproval: false,
+                         status: "awaiting-approval",
+                         requiresApproval: true,
                     };
                })
           );
@@ -102,7 +102,7 @@ module.exports.getPastQuestions = async function(req, res, next) {
           });
 
           questions = questions.map(async (question) => {
-               const docs = await Document.findAll({ where: { model: "question", modelId: question.id } });
+               const docs = await Document.findAll({ where: { model: "question", modelId: question.id , status: "approved" } });
                return {
                     question: question,
                     document: docs
@@ -126,7 +126,7 @@ module.exports.getPastQuestion = async function(req, res, next) {
                return next(CustomError.badRequest("Question does not exist"));
           }
 
-          const documents = await Document.findAll({ where: { model: "question", modelId: question.id } });
+          const documents = await Document.findAll({ where: { model: "question", modelId: question.id, status: "approved" } });
 
           res.status(OK).json({
                success: true,
