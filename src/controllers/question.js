@@ -101,18 +101,33 @@ module.exports.getPastQuestions = async function(req, res, next) {
                where: { ...req.query },
           });
 
-          questions = questions.map(async (question) => {
-               const docs = await Document.findAll({ where: { model: "question", modelId: question.id , status: "approved" } });
-               return {
+          const questionsWithDocsPromises = questions.map(async (question) => {
+            const docs = await Document.findAll({
+                where: {
+                    model: "question",
+                    modelId: question.id,
+                    status: "approved"
+                }
+            });
+
+            // Only return the question if documents exist
+            if (docs.length > 0) {
+                return {
                     question: question,
                     document: docs
-               };
-          });
+                };
+            }
+            return null;
+        });
+
+        let results = await Promise.all(questionsWithDocsPromises);
+
+        results = results.filter(result => result !== null);
 
           res.status(OK).json({
                success: true,
                status: res.statusCode,
-               data: await Promise.all(questions),
+               data: results,
           });
      } catch (error) {
           return next({ error });
@@ -121,12 +136,23 @@ module.exports.getPastQuestions = async function(req, res, next) {
 
 module.exports.getPastQuestion = async function(req, res, next) {
      try {
-          const question = await Question.findByPk(req.params.id);
+           const question = await Question.findByPk(req.params.id);
+
           if (!question) {
                return next(CustomError.badRequest("Question does not exist"));
           }
 
-          const documents = await Document.findAll({ where: { model: "question", modelId: question.id, status: "approved" } });
+          const documents = await Document.findAll({
+               where: {
+                    model: "question",
+                    modelId: question.id,
+                    status: "approved" // Only fetch approved documents
+               }
+          });
+
+          if (documents.length === 0) {
+               return next(CustomError.notFound("No approved documents found for this question."));
+          }
 
           res.status(OK).json({
                success: true,

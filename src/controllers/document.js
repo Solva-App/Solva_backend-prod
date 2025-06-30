@@ -75,28 +75,39 @@ module.exports.uploadDocument = async function(req, res, next) {
 module.exports.approveDocument = async function(req, res, next) {
      try {
           const document = await Document.findOne({
-               where: {
-                    id: req.params.docId,
-                    requiresApproval: true,
-               },
-          });
+            where: {
+                id: req.params.docId,
+                requiresApproval: true,
+                status: "awaiting-approval"
+            },
+        });
 
-          if (!document) {
-               return next(CustomError.badRequest("Invalid document id"));
-          } else if (document.approved) {
-               return next(CustomError.badRequest("Document already approved"));
-          }
+        if (!document) {
+            return next(CustomError.badRequest("Document not found, does not require approval, or is already processed."));
+        }
 
-          const uploader = await User.findByPk(document.owner);
-          if (!uploader) {
-               return console.log("how is uploader not exiting");
-          }
+        const uploader = await User.findByPk(document.owner);
+        if (!uploader) {
+            console.error(`Error: Uploader (ID: ${document.owner}) for document (ID: ${document.id}) not found.`);
+            return next(CustomError.serverError("Uploader not found for this document. Cannot proceed."));
+        }
 
-          const fee = 100;
-          uploader.balance += uploader.balance;
-          await uploader.save();
+        const fee = 100;
+        uploader.balance += fee;
+        await uploader.save();
 
-          document.status = "approved";
+        document.status = "approved";
+        await document.save();
+
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: "Document approved successfully and uploader credited.",
+            data: {
+                document: document,
+                uploaderBalance: uploader.balance
+            },
+        });
      } catch (error) {
           return next({ error });
      }
