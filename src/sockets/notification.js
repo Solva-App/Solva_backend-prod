@@ -1,4 +1,8 @@
+const { socketAuth } = require("../middlewares/auth");
+
 module.exports = function setupNotificationSocket(io) {
+  io.use(socketAuth);
+
   io.on("connection", (socket) => {
     const socketId = socket.id;
     socket.join(socketId.toString());
