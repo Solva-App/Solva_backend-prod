@@ -14,7 +14,7 @@ const app = express();
 const middlewares = require("./middlewares");
 
 const server = http.createServer(app);
-const io = new socket.Server(server);
+const io = new socket.Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
 app.use(express.json());
@@ -36,6 +36,7 @@ const freelancerRoutes = require("./routes/freelancer");
 const subscriptionRoutes = require("./routes/subscription");
 const webhookRoutes = require("./routes/webhook");
 const sliderRoutes = require("./routes/slider");
+const notificationRoutes = require("./routes/notification");
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -56,6 +57,9 @@ app.use("/api/v1/freelancers", freelancerRoutes);
 app.use("/api/v1/sub", subscriptionRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/slider", sliderRoutes);
+app.use("/api/v1/notification", notificationRoutes);
+
+require("./sockets/notification")(io);
 
 app.use(function (req, res, _next) {
   console.log(req.query);
