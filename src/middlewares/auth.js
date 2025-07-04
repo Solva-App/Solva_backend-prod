@@ -32,18 +32,14 @@ module.exports.socketAuth = async function (socket, next) {
     }
 
     if (!token) {
-      console.log("No token provided");
       return next(new Error("Socket auth error: No token"));
     }
 
     const data = await Token.verify(token);
-    socket.user = data;
+    socket.user = data.user;
 
-    console.log("✅ Socket authenticated:", data.user.id);
     return next();
   } catch (error) {
-    console.log("Invalid token");
-    console.error(error);
     return next(new Error("Socket auth error: Invalid token"));
   }
 };
