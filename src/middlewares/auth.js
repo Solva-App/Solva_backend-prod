@@ -32,7 +32,7 @@ module.exports.socketAuth = async function (socket, next) {
     }
 
     if (!token) {
-      console.log("❌ No token provided");
+      console.log("No token provided");
       return next(new Error("Socket auth error: No token"));
     }
 
@@ -42,7 +42,7 @@ module.exports.socketAuth = async function (socket, next) {
     console.log("✅ Socket authenticated:", data.user.id);
     return next();
   } catch (error) {
-    console.log("❌ Invalid token");
+    console.log("Invalid token");
     console.error(error);
     return next(new Error("Socket auth error: Invalid token"));
   }
