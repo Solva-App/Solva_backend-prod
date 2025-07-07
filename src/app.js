@@ -59,7 +59,7 @@ app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/slider", sliderRoutes);
 app.use("/api/v1/notification", notificationRoutes);
 
-require("./sockets/notification")(io);
+require("./helpers/socket")(io);
 
 app.use(function (req, res, _next) {
   console.log(req.query);
