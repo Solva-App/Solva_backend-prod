@@ -25,7 +25,7 @@ module.exports.auth = async function (req, res, next) {
 
 module.exports.socketAuth = async function (socket, next) {
   try {
-    let token = socket.handshake.auth.token;
+    let token = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZnVsbE5hbWUiOiJBZGFvYmkgQ2h1a3d1IiwiZ2VuZGVyIjpudWxsLCJhZGRyZXNzIjpudWxsLCJpc0FkbWluIjpmYWxzZSwicGhvbmUiOiIwODAxMjM0NTY3OCIsInJlZmVycmFsQ29kZSI6IjU4MEY4QiIsImlzQWN0aXZlIjp0cnVlLCJjYXRlZ29yeSI6InVzZXIiLCJpc1N1c3BlbmRlZCI6ZmFsc2UsInJvbGUiOiJ1c2VyIiwiYmFsYW5jZSI6MCwiY2hhcmdlQ2hhbm5lbCI6bnVsbCwiY2hhcmdlQXV0aENvZGUiOm51bGwsImxhc3RTdWJzY3JpcHRpb25QbGFuIjpudWxsLCJhdXRvQ2hhcmdlIjpmYWxzZSwibGFzdFN1YnNjcmlwdGlvbkV4cGlyZXNBdCI6bnVsbCwiY3JlYXRlZEF0IjoiMjAyNS0wNy0wNFQxMjozNzoxNC4wMDBaIiwidXBkYXRlZEF0IjoiMjAyNS0wNy0wNFQxMjozNzoxNC4wMDBaIiwiaWF0IjoxNzUxODgzNDI5LCJleHAiOjE3NTE4ODUyMjl9.sHUiwS8-3SlYVheVv6fMS7L23yFqraoqO3Qboksb-ro";
 
     if (token.startsWith("Bearer ")) {
       token = token.split(" ")[1];

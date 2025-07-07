@@ -2,6 +2,7 @@ const CustomError = require('../helpers/error')
 const { Schema } = require('json-validace')
 const Notification = require('../models/Notification')
 const { OK } = require('http-status-codes')
+const Socket = require('../models/Socket')
 
 module.exports.sendNotification = async function (req, res, next) {
   try {
@@ -16,7 +17,7 @@ module.exports.sendNotification = async function (req, res, next) {
     }
 
     const { user, body } = req;
-    const { socketId, title, message } = body;
+    const { target, title, message } = body;
     const owner = user.id;
 
     const notification = await Notification.create({
@@ -26,8 +27,10 @@ module.exports.sendNotification = async function (req, res, next) {
       isRead: false,
     });
 
+    const socketMapping = await Socket.findOne({ where: { owner: target } });
+
     const io = req.app.get("io");
-    io.to(socketId.toString()).emit("notification", notification);
+    io.to(socketMapping.socketId).emit("notification", notification);
 
     res.status(OK).json({
       success: true,

@@ -1,17 +1,26 @@
 const { socketAuth } = require("../middlewares/auth");
+const Socket = require("../models/Socket")
 
 module.exports = function setupSocket(io) {
   io.use(socketAuth);
 
-  io.on("connection", (socket) => {
-    const socketId = socket.id;
+  io.on("connection", async (socket) => {
     const userId = socket.user?.id;
+    const socketId = socket.id;
 
-    socket.join(socketId.toString());
-    console.log(`User ${userId} connected on Socket ID: ${socketId}`);
+    try {
+      if (userId) {
+        await Socket.upsert({ owner: userId, socket: socketId });
+      }
 
-    socket.on("disconnect", () => {
-      console.log(`User ${userId} disconnected from Socket ID: ${socketId}`);
-    });
+      socket.join(socketId);
+
+      socket.on("disconnect", async () => {
+        await Socket.destroy({ where: { owner: userId } });
+      });
+    } catch (error) {
+      console.error("Socket DB error:", error.message);
+    }
   });
 };
+
