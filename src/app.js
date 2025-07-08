@@ -37,6 +37,7 @@ const subscriptionRoutes = require("./routes/subscription");
 const webhookRoutes = require("./routes/webhook");
 const sliderRoutes = require("./routes/slider");
 const notificationRoutes = require("./routes/notification");
+const chatRoutes = require("./routes/chat");
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -58,6 +59,7 @@ app.use("/api/v1/sub", subscriptionRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/slider", sliderRoutes);
 app.use("/api/v1/notification", notificationRoutes);
+app.use("/api/v1/chat", chatRoutes);
 
 require("./helpers/socket")(io);
 

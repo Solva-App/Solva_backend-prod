@@ -13,6 +13,7 @@
   "dependencies": {
     "@firebase/app": "^0.9.29",
     "@firebase/storage": "^0.12.2",
+    "@huggingface/inference": "^4.4.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
