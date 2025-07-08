@@ -45,7 +45,6 @@ module.exports.handleChat = async function (req, res, next) {
     });
 
     const socketMapping = await Socket.findOne({ where: { owner } });
-    console.log(socketMapping.socket)
 
     const io = req.app.get('io');
     io.to(socketMapping.socket).emit('chatReply', aiResponse );
@@ -56,8 +55,7 @@ module.exports.handleChat = async function (req, res, next) {
       message: "AI response generated successfully",
       data: {
         prompt,
-        response: aiResponse,
-        chatId: chat.id
+        response: aiResponse
       }
     });
 

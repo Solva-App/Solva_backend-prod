@@ -30,7 +30,7 @@ module.exports.sendNotification = async function (req, res, next) {
     const socketMapping = await Socket.findOne({ where: { owner: target } });
 
     const io = req.app.get("io");
-    io.to(socketMapping.socketId).emit("notification", notification);
+    io.to(socketMapping.socket).emit("notification", notification);
 
     res.status(OK).json({
       success: true,
