@@ -15,10 +15,14 @@ module.exports.getUserChats = async (req, res) => {
       limit: 50
     });
 
-    res.json({ chats });
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Chat History gotten successfully",
+      data: notification,
+    });
   } catch (error) {
-    console.error('[Chat History Error]', error.message);
-    res.status(500).json({ error: 'Failed to retrieve chats' });
+    return next({ error });
   }
 };
 
