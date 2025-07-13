@@ -3,6 +3,7 @@ const { Schema } = require('json-validace')
 const Notification = require('../models/Notification')
 const { OK } = require('http-status-codes')
 const Socket = require('../models/Socket')
+const { sendNotification } = require("../services/notification");
 
 module.exports.sendNotification = async function (req, res, next) {
   try {
@@ -17,20 +18,13 @@ module.exports.sendNotification = async function (req, res, next) {
     }
 
     const { user, body } = req;
-    const { target, title, message } = body;
-    const owner = user.id;
+    const { title, message } = body;
 
-    const notification = await Notification.create({
-      owner,
+    const notification = await sendNotification({
+      target: user.id,
       title,
       message,
-      isRead: false,
     });
-
-    const socketMapping = await Socket.findOne({ where: { owner: target } });
-
-    const io = req.app.get("io");
-    io.to(socketMapping.socket).emit("notification", notification);
 
     res.status(OK).json({
       success: true,
@@ -42,6 +36,7 @@ module.exports.sendNotification = async function (req, res, next) {
     return next({ error });
   }
 };
+
 
 module.exports.getUnreadNotifications = async function (req, res, next) {
   try {

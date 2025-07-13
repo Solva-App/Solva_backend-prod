@@ -7,7 +7,7 @@ router.get('/:id', controllers.getPastQuestion)
 router.get('/', controllers.getPastQuestions)
 
 router.use(auth)
-router.use(isAdmin)
+// router.use(isAdmin)
 
 router.post('/create', fileParser.array('documents', 10), controllers.createPastQuestion)
 

@@ -5,6 +5,7 @@ const firebase = require("./../helpers/firebase");
 const Document = require("../models/Document");
 const { OK } = require("http-status-codes");
 const User = require("../models/User");
+const { sendNotification } = require("../services/notification");
 
 module.exports.uploadDocument = async function(req, res, next) {
      try {
@@ -98,6 +99,12 @@ module.exports.approveDocument = async function(req, res, next) {
 
         document.status = "approved";
         await document.save();
+
+                  await sendNotification({
+      target: req.user.id,
+      title : "Question Approved",
+      message: "Your question has been approved. You have been credited 100 points.",
+    });
 
         res.status(OK).json({
             success: true,

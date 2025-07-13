@@ -7,6 +7,7 @@ const Document = require("../models/Document");
 const { OK } = require("http-status-codes");
 const Question = require("../models/Question");
 const { Op } = require("sequelize");
+const { sendNotification } = require("../services/notification");
 
 module.exports.createPastQuestion = async function(req, res, next) {
      try {
@@ -21,7 +22,7 @@ module.exports.createPastQuestion = async function(req, res, next) {
           });
           req.body.documents = [];
 
-          let { body } = req;
+          let { user, body } = req;
           let files = {
                documents: [],
           };
@@ -38,7 +39,7 @@ module.exports.createPastQuestion = async function(req, res, next) {
                return next(CustomError.badRequest("Invalid request body", result.error));
           }
 
-          // upload cert to firebase or aws bucket
+          upload cert to firebase or aws bucket
           for (const file of files.documents) {
                const upload = await firebase.fileUpload(file, file.fieldname);
                if (upload instanceof CustomError) {
@@ -58,7 +59,6 @@ module.exports.createPastQuestion = async function(req, res, next) {
                documents: undefined,
                owner: req.user.id,
           });
-
           const documents = await Document.bulkCreate(
                body.documents.map((d) => {
                     return {
@@ -74,6 +74,12 @@ module.exports.createPastQuestion = async function(req, res, next) {
                     };
                })
           );
+
+          await sendNotification({
+      target: req.user.id,
+      title : "Question Created",
+      message: "You will get a response within 3 days",
+    });
 
           res.status(OK).json({
                success: true,

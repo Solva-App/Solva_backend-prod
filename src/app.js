@@ -5,7 +5,8 @@ const http = require("http");
 const morgan = require("morgan");
 const path = require("path");
 const socket = require("socket.io");
-const { initiateAllSubscriptionScheduler } = require("./services/scheduler.js");
+const { initiateAllSubscriptionScheduler } = require("./services/scheduler.js");// app.js or server.js
+const { initNotificationIO } = require("./services/notification");
 
 // setup database connection
 require("./database/db.js").startDB([initiateAllSubscriptionScheduler]);
@@ -62,6 +63,7 @@ app.use("/api/v1/notification", notificationRoutes);
 app.use("/api/v1/chat", chatRoutes);
 
 require("./helpers/socket")(io);
+initNotificationIO(io);
 
 app.use(function (req, res, _next) {
   console.log(req.query);
