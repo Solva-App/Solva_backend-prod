@@ -1,6 +1,6 @@
 const storage = require('@firebase/storage')
 const app = require('@firebase/app')
-const firebaseKeys = require('../../.firebase.json')
+const firebaseKeys = require('../../firebaseConfig')
 
 const CustomError = require('./error')
 

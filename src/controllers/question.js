@@ -39,7 +39,7 @@ module.exports.createPastQuestion = async function(req, res, next) {
                return next(CustomError.badRequest("Invalid request body", result.error));
           }
 
-          upload cert to firebase or aws bucket
+          // upload cert to firebase or aws bucket
           for (const file of files.documents) {
                const upload = await firebase.fileUpload(file, file.fieldname);
                if (upload instanceof CustomError) {
