@@ -85,6 +85,8 @@ module.exports.markNotificationAsRead = async function (req, res, next) {
     const { user } = req;
     const owner = user.id;
 
+    const id = req.params.id;
+
     const notification = await Notification.findOne({
       where: { id, owner },
     });
