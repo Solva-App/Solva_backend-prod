@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 module.exports = {
   messaging: {
     type: process.env.FIREBASE_TYPE,
