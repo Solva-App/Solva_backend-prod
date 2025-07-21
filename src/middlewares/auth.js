@@ -25,7 +25,7 @@ module.exports.auth = async function (req, res, next) {
 
 module.exports.socketAuth = async function (socket, next) {
   try {
-    let token = socket.handshake.auth.token;
+    let token = socket.handshake.auth?.token || socket.handshake.headers?.token
 
     if (token.startsWith("Bearer ")) {
       token = token.split(" ")[1];
