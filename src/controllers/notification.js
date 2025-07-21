@@ -4,6 +4,7 @@ const Notification = require('../models/Notification')
 const { OK } = require('http-status-codes')
 const Socket = require('../models/Socket')
 const { sendNotification } = require("../services/notification");
+const User = require('../models/User')
 
 module.exports.sendNotification = async function (req, res, next) {
   try {
@@ -36,7 +37,6 @@ module.exports.sendNotification = async function (req, res, next) {
     return next({ error });
   }
 };
-
 
 module.exports.getUnreadNotifications = async function (req, res, next) {
   try {
@@ -129,3 +129,46 @@ module.exports.markAllAsRead = async function (req, res, next) {
   }
 };
 
+module.exports.broadcast = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      title: { type: "string", required: true },
+      message: { type: "string", required: true },
+    });
+
+    const result = schema.validate(req.body);
+    if (result.errors && result.errors.length > 0) {
+      return next(CustomError.badRequest("Invalid request body", result.errors));
+    }
+
+    const { title, message } = req.body;
+
+    // Get all user IDs only
+    const users = await User.findAll({ attributes: ["id"] });
+
+    // Use Promise.all to send notifications in parallel
+    await Promise.all(
+      users.map((user) =>
+        sendNotification({
+          target: user.id,
+          title,
+          message,
+        })
+      )
+    );
+
+    io.emit("notification:global", {
+      title,
+      message,
+    });
+
+
+    res.status(OK).json({
+      success: true,
+      message: "Broadcast notification sent to all users",
+    });
+  } catch (error) {
+    console.error("Broadcast failed:", error);
+    next(error);
+  }
+};
