@@ -17,25 +17,18 @@ module.exports.becomeFreelancer = async function (req, res, next) {
       portfolioLink: { type: "string", required: true },
       phoneNumber: { type: "string", required: true },
       whatsappLink: { type: "string", required: true },
-      profilePic: {
-        type: "object",
-        required: true,
-        $_data: {
-          fieldname: "string",
-          originalname: "string",
-          encoding: "string",
-          mimetype: "string",
-          buffer: "object",
-          size: "number",
-          base64String: "string",
-        },
-      },
     });
 
     let { user, body, file } = req;
-    body.profilePic = await image.modifyStringImageFile(
-      body?.profilePic?.length ? body.profilePic : file,
-    );
+
+    const uploadedImage = file || (body?.profilePic?.buffer ? body.profilePic : null);
+    if (!uploadedImage) {
+      return next(CustomError.badRequest("Image file is required"));
+    }
+
+    // body.profilePic = await image.modifyStringImageFile(
+    //   body?.profilePic?.length ? body.profilePic : file,
+    // );
 
     const result = schema.validate(body);
     if (result.error) {
@@ -51,7 +44,7 @@ module.exports.becomeFreelancer = async function (req, res, next) {
     }
 
     // upload image to cloud
-    const link = await firebase.fileUpload(file, file.fieldname);
+    const link = await firebase.fileUpload(uploadedImage, uploadedImage.fieldname);
     if (link instanceof CustomError) {
       return next(link);
     }
@@ -155,13 +148,7 @@ module.exports.editFreelancerProfile = async function (req, res, next) {
 
     let { user, body, file } = req;
 
-    if (body?.profilePic?.length || file) {
-      body.profilePic = await image.modifyStringImageFile(
-        body?.profilePic?.length ? body.profilePic : file,
-      );
-    } else {
-      delete body.profilePic;
-    }
+    const uploadedImage = file || (body?.profilePic?.buffer ? body.profilePic : null);
 
     const result = schema.validate(body);
     if (result.error) {
@@ -182,8 +169,8 @@ module.exports.editFreelancerProfile = async function (req, res, next) {
       return next(CustomError.notFound("Freelancer profile not found. Please create one first."));
     }
 
-    if (file) {
-      const link = await firebase.fileUpload(file, file.fieldname);
+    if (uploadedImage) {
+      const link = await firebase.fileUpload(uploadedImage, uploadedImage.fieldname);
       if (link instanceof CustomError) {
         return next(link);
       }
@@ -236,6 +223,36 @@ module.exports.addComment = async function (req, res, next) {
     });
   } catch (error) {
     return next({ error });
+  }
+};
+
+module.exports.getFreelancerComments = async function (req, res, next) {
+  try {
+    const freelancerId = req.params.freelancerId;
+
+    const freelancer = await Freelancer.findByPk(freelancerId);
+    if (!freelancer) {
+      return next(CustomError.badRequest("Freelancer not found."));
+    }
+
+    const user = await User.findByPk(freelancer.owner, {
+      attributes: { exclude: ["email", "password"] },
+    });
+
+    const comments = await Comment.findAll({
+      where: { freelancer: freelancerId },
+    });
+
+    res.status(HttpStatusCode.Ok).json({
+      success: true,
+      status: res.statusCode,
+      message: "Freelancer's comments retrieved successfully.",
+      data: {
+        comments,
+      },
+    });
+  } catch (error) {
+    return next(error);
   }
 };
 

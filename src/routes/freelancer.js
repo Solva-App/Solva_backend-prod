@@ -3,6 +3,7 @@ const { fileParser } = require('../middlewares')
 const { auth } = require('../middlewares/auth')
 const controllers = require('./../controllers/freelancer')
 
+router.get('/comment/:freelancerId', controllers.getFreelancerComments)
 router.post('/create/comment/:freelancerId', controllers.addComment)
 
 router.use(auth)
