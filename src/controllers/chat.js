@@ -5,7 +5,7 @@ const { OK } = require('http-status-codes')
 const { generateResponse } = require('../helpers/huggingface');
 const Socket = require('../models/Socket')
 
-module.exports.getUserChats = async (req, res) => {
+module.exports.getUserChats = async (req, res, next) => {
   const owner = req.params.id;
 
   try {
@@ -19,7 +19,7 @@ module.exports.getUserChats = async (req, res) => {
       success: true,
       status: res.statusCode,
       message: "Chat History gotten successfully",
-      data: notification,
+      data: chats,
     });
   } catch (error) {
     return next({ error });
