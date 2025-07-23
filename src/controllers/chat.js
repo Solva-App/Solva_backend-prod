@@ -51,7 +51,11 @@ module.exports.handleChat = async function (req, res, next) {
     const socketMapping = await Socket.findOne({ where: { owner } });
 
     const io = req.app.get('io');
-    io.to(socketMapping.socket).emit('chatReply', aiResponse );
+    io.to(socketMapping.socket).emit('chatReply', {
+      prompt: chat.prompt,
+      response: chat.response
+    });
+
 
     res.status(OK).json({
       success: true,

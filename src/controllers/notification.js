@@ -157,6 +157,8 @@ module.exports.broadcast = async function (req, res, next) {
       )
     );
 
+    const io = req.app.get('io');
+
     io.emit("notification:global", {
       title,
       message,
