@@ -157,14 +157,6 @@ module.exports.broadcast = async function (req, res, next) {
       )
     );
 
-    const io = req.app.get('io');
-
-    io.emit("notification:global", {
-      title,
-      message,
-    });
-
-
     res.status(OK).json({
       success: true,
       message: "Broadcast notification sent to all users",

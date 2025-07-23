@@ -16,8 +16,10 @@ async function sendNotification({ target, title, message }) {
   });
 
     const socketMapping = await Socket.findOne({ where: { owner: target } });
-     ioInstance.to(socketMapping.socket).emit("notification", notification);
 
+    if (socketMapping?.socket && ioInstance) {
+      ioInstance.to(socketMapping.socket).emit("notification", notification);
+    }
   return notification;
 }
 
