@@ -36,11 +36,14 @@ module.exports.socketAuth = async function (socket, next) {
     }
 
     const data = await Token.verify(token);
+    if (data instanceof CustomError) return next(data)
+    else if (!data.user) return next(CustomError.unauthorizedRequest('Invalid socket connection!', null, false))
+
     socket.user = data.user;
 
     return next();
   } catch (error) {
-    return next(new Error("Socket auth error: Invalid token"));
+    next({ error })
   }
 };
 
