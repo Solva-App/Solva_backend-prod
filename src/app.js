@@ -15,7 +15,12 @@ const app = express();
 const middlewares = require("./middlewares");
 
 const server = http.createServer(app);
-const io = new socket.Server(server, { cors: { origin: "*" } });
+const io = new socket.Server(server,{
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
 
 app.use(cors());
 app.use(express.json());

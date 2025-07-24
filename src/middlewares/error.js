@@ -4,7 +4,7 @@ module.exports = function (error, req, res, _next) {
     error = error.instance ? error.instance : error
 
     console.error('----------------------------------------------------------------')
-    console.error('Error triggered by', req?.user?.username ?? ' none auth user', 'with ID of', req?.user?.id, '\n\n')
+    console.error('Error triggered by', req?.user?.fullName ?? req?.user?.username ?? ' none auth user', 'with ID of', req?.user?.id, '\n\n')
     console.error(req.body)
     console.error(error)
     console.error('----------------------------------------------------------------')
