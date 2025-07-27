@@ -39,21 +39,19 @@ module.exports.handleChat = async function (req, res, next) {
     }
 
     const { prompt, owner } = req.body;
-    console.log(`💬 Prompt from user ${owner}:`, prompt);
+    console.log(`Prompt from user ${owner}:`, prompt);
 
     const aiResponse = await generateResponse(prompt);
-
-    const chat = await Chat.create({ prompt, response: aiResponse, owner });
 
     const socketMapping = await Socket.findOne({ where: { owner } });
 
     if (!socketMapping) {
       console.log(`No socket mapping found for owner: ${owner}`);
-      return res.status(200).json({
+      return res.status(401).json({
         success: true,
-        status: 200,
-        message: "Response generated, but user is not connected via socket",
-        data: { prompt: chat.prompt, response: chat.response }
+        status: 401,
+        message: "User is not connected via socket",
+        // data: { prompt, response: aiResponse }
       });
     }
 
@@ -63,13 +61,15 @@ module.exports.handleChat = async function (req, res, next) {
 
     if (!socket || !socket.connected) {
       console.log(`Socket not connected for user: ${owner}, Socket ID: ${socketId}`);
-      return res.status(200).json({
+      return res.status(401).json({
         success: true,
-        status: 200,
-        message: "Response generated, but socket is not active",
-        data: { prompt: chat.prompt, response: chat.response }
+        status: 401,
+        message: "Socket is not active",
+        // data: { prompt, response: aiResponse }
       });
     }
+
+    const chat = await Chat.create({ prompt, response: aiResponse, owner });
 
     io.to(socketId).emit("chatReply", {
       prompt: chat.prompt,
