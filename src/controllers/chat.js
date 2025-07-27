@@ -50,17 +50,38 @@ module.exports.handleChat = async function (req, res, next) {
 
     const socketMapping = await Socket.findOne({ where: { owner } });
 
-    const io = req.app.get('io');
-    io.to(socketMapping.socket).emit('chatReply', {
-      prompt: chat.prompt,
-      response: chat.response
-    });
+    const io = req.app.get("io");
 
+    // Default to not sent
+    let socketReplySent = false;
 
-    res.status(OK).json({
+    if (socketMapping && socketMapping.socket) {
+      const socket = io.sockets.sockets.get(socketMapping.socket);
+
+      if (socket && socket.connected) {
+        // Safe: emit once only
+        socket.emit("chatReply", {
+          prompt: chat.prompt,
+          response: chat.response,
+        });
+        socketReplySent = true;
+      }
+    }
+
+    if (!socketReplySent) {
+      console.log(`Socket not connected or missing for owner: ${owner}`);
+      return res.status(500).json({
+        success: false,
+        status: 500,
+        message: "Not connected to Socket.IO server",
+        error: "Socket not available for this user",
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      status: res.statusCode,
-      message: "AI response generated successfully",
+      status: 200,
+      message: "AI response generated and sent",
       data: {
         prompt,
         response: aiResponse
@@ -71,3 +92,4 @@ module.exports.handleChat = async function (req, res, next) {
     return next({ error });
   }
 };
+
