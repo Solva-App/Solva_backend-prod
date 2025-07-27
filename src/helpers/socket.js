@@ -17,33 +17,30 @@ module.exports = function setupSocket(io) {
   const userId = socket.user?.id;
   const socketId = socket.id;
 
-  console.log(`User connected: ${userId}, Socket ID: ${socketId}`);
+  if (!userId) {
+    console.warn(`Unauthenticated socket connected: ${socketId}`);
+    return socket.disconnect(true);
+  }
 
   try {
     if (userId) {
-      // 🔁 Check for existing socket for this user
       const existingSocket = await Socket.findOne({ where: { owner: userId } });
 
       if (existingSocket && existingSocket.socket !== socketId) {
-        // ❌ Disconnect the old socket if it still exists
         const oldSocket = io.sockets.sockets.get(existingSocket.socket);
         if (oldSocket) {
           oldSocket.disconnect();
           console.log(`Duplicate socket for user ${userId} disconnected.`);
         }
-
-        // 🧹 Remove old mapping
         await Socket.destroy({ where: { owner: userId } });
       }
-
-      // ✅ Save new socket mapping
       await Socket.upsert({ owner: userId, socket: socketId });
-      socket.join(socketId);
+      console.log(`User connected: ${userId}, Socket ID: ${socketId}`);
+      // socket.join(socketId);
     }
 
     socket.on("disconnect", async () => {
       try {
-        // Only remove the socket mapping if the same socket disconnects
         const currentMapping = await Socket.findOne({ where: { owner: userId } });
         if (currentMapping?.socket === socketId) {
           await Socket.destroy({ where: { owner: userId } });
