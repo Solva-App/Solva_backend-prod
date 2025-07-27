@@ -2,41 +2,70 @@ const { socketAuth } = require("../middlewares/auth");
 const Socket = require("../models/Socket");
 
 module.exports = function setupSocket(io) {
-  (async () => {
-    try {
-      await Socket.destroy({ where: {} });
-      console.log("Cleared all stale socket records on server startup.");
-    } catch (err) {
-      console.error("Failed to clear socket table on startup:", err.message);
-    }
-  })();
+  // (async () => {
+  //   try {
+  //     await Socket.destroy({ where: {} });
+  //     console.log("Cleared all stale socket records on server startup.");
+  //   } catch (err) {
+  //     console.error("Failed to clear socket table on startup:", err.message);
+  //   }
+  // })();
 
   io.use(socketAuth);
 
   io.on("connection", async (socket) => {
-    const userId = socket.user?.id;
-    const socketId = socket.id;
+  const userId = socket.user?.id;
+  const socketId = socket.id;
 
-    console.log(`User connected: ${userId}, Socket ID: ${socketId}`);
+  console.log(`User connected: ${userId}, Socket ID: ${socketId}`);
 
-    try {
-      if (userId) {
-        await Socket.upsert({ owner: userId, socket: socketId });
-        socket.join(socketId); // optional: only needed if you're using room features
+  try {
+    if (userId) {
+      // 🔁 Check for existing socket for this user
+      const existingSocket = await Socket.findOne({ where: { owner: userId } });
+
+      if (existingSocket && existingSocket.socket !== socketId) {
+        // ❌ Disconnect the old socket if it still exists
+        const oldSocket = io.sockets.sockets.get(existingSocket.socket);
+        if (oldSocket) {
+          oldSocket.disconnect();
+          console.log(`Duplicate socket for user ${userId} disconnected.`);
+        }
+
+        // 🧹 Remove old mapping
+        await Socket.destroy({ where: { owner: userId } });
       }
 
-      // Handle disconnection
-      socket.on("disconnect", async () => {
-        try {
+      // ✅ Save new socket mapping
+      await Socket.upsert({ owner: userId, socket: socketId });
+      socket.join(socketId);
+    }
+
+    socket.on("disconnect", async () => {
+      try {
+        // Only remove the socket mapping if the same socket disconnects
+        const currentMapping = await Socket.findOne({ where: { owner: userId } });
+        if (currentMapping?.socket === socketId) {
           await Socket.destroy({ where: { owner: userId } });
           console.log(`User disconnected: ${userId}, Socket ID: ${socketId}`);
-        } catch (err) {
-          console.error("Error removing socket on disconnect:", err.message);
         }
-      });
+      } catch (err) {
+        console.error("Error during disconnect cleanup:", err.message);
+      }
+    });
 
-    } catch (error) {
-      console.error("Socket DB error during connection:", error.message);
-    }
-  });
+    socket.on("chatReply", async (data) => {
+      // 🚫 Prevent emit if not connected
+      if (socket.connected) {
+        io.to(socketId).emit("chatReply", data);
+      } else {
+        console.log("Socket is not connected. chatReply not sent.");
+      }
+    });
+
+  } catch (error) {
+    console.error("Socket DB error during connection:", error.message);
+  }
+});
+
 };

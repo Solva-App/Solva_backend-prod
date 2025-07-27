@@ -50,33 +50,34 @@ module.exports.handleChat = async function (req, res, next) {
 
     const socketMapping = await Socket.findOne({ where: { owner } });
 
-    const io = req.app.get("io");
-
-    // Default to not sent
-    let socketReplySent = false;
-
     if (socketMapping && socketMapping.socket) {
+      const io = req.app.get("io");
       const socket = io.sockets.sockets.get(socketMapping.socket);
 
       if (socket && socket.connected) {
-        // Safe: emit once only
-        socket.emit("chatReply", {
+        io.to(socketMapping.socket).emit("chatReply", {
           prompt: chat.prompt,
           response: chat.response,
         });
-        socketReplySent = true;
+      } else {
+        console.log("Socket is not connected for user", owner);
+        return res.status(500).json({
+          success: false,
+          status: 500,
+          message: "Internal Server Error",
+          error: "Not connected to socket.io server",
+        });
       }
-    }
-
-    if (!socketReplySent) {
-      console.log(`Socket not connected or missing for owner: ${owner}`);
+    } else {
+      console.log("No socket mapping found for owner:", owner);
       return res.status(500).json({
         success: false,
         status: 500,
-        message: "Not connected to Socket.IO server",
-        error: "Socket not available for this user",
+        message: "Internal Server Error",
+        error: "Not connected to socket.io server",
       });
     }
+
 
     return res.status(200).json({
       success: true,
