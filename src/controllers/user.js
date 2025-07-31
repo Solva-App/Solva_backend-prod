@@ -575,3 +575,40 @@ module.exports.adminLogin = async function (req, res, next) {
     return next({ error });
   }
 };
+
+module.exports.sendAdminForgotPasswordOTP = async function (req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) return next(CustomError.badRequest("Email field missing"));
+
+    const user = await User.findOne({ where: { email } });
+    if (!user || !user.isAdmin) {
+      return next(CustomError.unauthorizedRequest("Only admin can use this endpoint"));
+    }
+
+    // simply call the user version now that we've confirmed admin
+    return module.exports.sendForgotPasswordOTP(req, res, next);
+  } catch (error) {
+    console.log("Failed to send admin forgot password OTP\n", error);
+    res.status(500).json({ error: "Something went wrong, please retry" });
+  }
+};
+
+// use resetForgottenPassword to create another for admin
+module.exports.adminResetForgottenPassword = async function (req, res, next) {
+  try {
+    const { userId } = req.body;
+    if (!userId) return next(CustomError.badRequest("User ID field missing"));
+
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user || !user.isAdmin) {
+      return next(CustomError.unauthorizedRequest("Only admin can use this endpoint"));
+    }
+
+    // simply call the user version now that we've confirmed admin
+    return module.exports.resetForgottenPassword(req, res, next);
+  } catch (error) {
+    console.log("Failed to send admin forgot password OTP\n", error);
+    res.status(500).json({ error: "Something went wrong, please retry" });
+  }
+};

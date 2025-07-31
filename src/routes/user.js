@@ -11,6 +11,8 @@ router.post("/forgotten/password/reset", controllers.resetForgottenPassword);
 router.get("/referrals/:userId", controllers.getUserReferrals);
 
 router.post("/admin/login", controllers.adminLogin);
+router.post("/admin/forgotten/password/otp", controllers.sendAdminForgotPasswordOTP);
+router.post("/admin/forgotten/password/reset", controllers.adminResetForgottenPassword);
 
 router.use(auth);
 router.get("/", controllers.getUser);
