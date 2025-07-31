@@ -32,7 +32,7 @@ const userSchema = {
   },
   password: {
     type: STRING,
-    allwNull: false,
+    allowNull: false,
   },
   referral: {
     type: STRING,

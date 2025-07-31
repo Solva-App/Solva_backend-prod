@@ -7,9 +7,11 @@ const path = require("path");
 const socket = require("socket.io");
 const { initiateAllSubscriptionScheduler } = require("./services/scheduler.js");// app.js or server.js
 const { initNotificationIO } = require("./services/notification");
+const { checkOrCreateAdmin } = require("./helpers/admin");
 
 // setup database connection
 require("./database/db.js").startDB([initiateAllSubscriptionScheduler]);
+checkOrCreateAdmin();
 
 const app = express();
 const middlewares = require("./middlewares");
