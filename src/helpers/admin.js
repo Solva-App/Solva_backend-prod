@@ -1,4 +1,3 @@
-const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 require("dotenv").config();
 
@@ -23,13 +22,12 @@ module.exports.checkOrCreateAdmin = async () => {
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(adminData.password, Number(process.env.PASSWORD_HASH));
-
+    // No admin found, create one (password will be hashed by the model hook)
     const newAdmin = await User.create({
       fullName: adminData.fullName,
-      email: adminData.email,
+      email: adminData.email.toLowerCase(),
       phone: adminData.phone,
-      password: hashedPassword,
+      password: adminData.password, // plain password, hook will hash
       role: "admin",
       category: "admin",
       isAdmin: true,

@@ -102,6 +102,13 @@ module.exports.login = async function (req, res, next) {
     const user = await User.verifyLoginCredentials(body);
     if (user instanceof CustomError) return next(user);
 
+    if (user.isAdmin)
+      return next(
+        CustomError.unauthorizedRequest(
+          "Use admin login page"
+        )
+      );
+
     const tokens = await Token.generate(user);
     if (tokens instanceof CustomError) {
       return next(tokens);
@@ -525,5 +532,46 @@ module.exports.getUserReferrals = async (req, res, next) => {
   } catch (error) {
     console.log("Failed to get referral users\n", error);
     res.status(500).json({ error: "Something went wrong, please retry" });
+  }
+};
+
+module.exports.adminLogin = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      email: { type: "email", required: true },
+      password: { type: "string", required: true },
+    });
+    const result = schema.validate(req.body);
+    if (result.error) {
+      return next(CustomError.badRequest("Invalid request body", result.error));
+    }
+
+    const body = result.data;
+    const user = await User.verifyLoginCredentials(body);
+    if (user instanceof CustomError) return next(user);
+
+    if (!user.isAdmin)
+      return next(
+        CustomError.unauthorizedRequest(
+          "You are not authorized to access this endpoint"
+        )
+      );
+
+    const tokens = await Token.generate(user);
+    if (tokens instanceof CustomError) {
+      return next(tokens);
+    }
+    res.status(StatusCodes.OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "User login successfully",
+      data: {
+        user,
+        tokens,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return next({ error });
   }
 };
