@@ -1,6 +1,7 @@
 const CustomError = require('../helpers/error')
 const { Schema } = require('json-validace')
 const Cashout = require('../models/Cashout')
+const User = require('../models/User')
 const { OK } = require('http-status-codes')
 
 module.exports.createCashout = async function (req, res, next) {

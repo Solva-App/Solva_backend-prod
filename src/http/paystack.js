@@ -2,7 +2,7 @@ const axios = require('axios')
 const CustomError = require('../helpers/error')
 
 const headers = {
-    'Caontent-Type': 'application/json',
+    'Content-Type': 'application/json',
     Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
 }
 

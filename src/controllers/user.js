@@ -322,7 +322,7 @@ module.exports.flagUsers = async function (req, res, next) {
     user.isSuspended = true;
     await user.save();
 
-    return res.status(OK).json({
+    return res.status(200).json({
       success: true,
       status: res.statusCode,
       message: "User suspended successfully",
@@ -343,10 +343,10 @@ module.exports.unFlagUsers = async function (req, res, next) {
     user.isSuspended = false;
     await user.save();
 
-    return res.status(OK).json({
+    return res.status(200).json({
       success: true,
       status: res.statusCode,
-      message: "User suspended successfully",
+      message: "User unsuspended successfully",
       data: user,
     });
   } catch (error) {
@@ -564,7 +564,7 @@ module.exports.adminLogin = async function (req, res, next) {
     res.status(StatusCodes.OK).json({
       success: true,
       status: res.statusCode,
-      message: "User login successfully",
+      message: "Admin login successfully",
       data: {
         user,
         tokens,
@@ -576,7 +576,7 @@ module.exports.adminLogin = async function (req, res, next) {
   }
 };
 
-module.exports.sendAdminForgotPasswordOTP = async function (req, res, next) {
+module.exports.adminSendForgotPasswordOTP = async function (req, res, next) {
   try {
     const { email } = req.body;
     if (!email) return next(CustomError.badRequest("Email field missing"));

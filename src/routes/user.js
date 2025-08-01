@@ -11,7 +11,7 @@ router.post("/forgotten/password/reset", controllers.resetForgottenPassword);
 router.get("/referrals/:userId", controllers.getUserReferrals);
 
 router.post("/admin/login", controllers.adminLogin);
-router.post("/admin/forgotten/password/otp", controllers.sendAdminForgotPasswordOTP);
+router.post("/admin/forgotten/password/otp", controllers.adminSendForgotPasswordOTP);
 router.post("/admin/forgotten/password/reset", controllers.adminResetForgottenPassword);
 
 router.use(auth);
@@ -22,8 +22,9 @@ router.get("/balance/:id", controllers.getUserBalance);
 router.get("/:id", controllers.getUserById);
 
 router.use(isAdmin); // ensure only admins  gets access to the below endpoints
-router.get("/all", controllers.getAllUsers);
+router.get("/admin/all", controllers.getAllUsers);
 router.patch("/flag/:id", controllers.flagUsers);
 router.patch("/unflag/:id", controllers.unFlagUsers);
 
 module.exports = router;
+
