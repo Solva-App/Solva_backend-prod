@@ -12,7 +12,6 @@ router.patch("/:id/read", controllers.markNotificationAsRead);
 router.patch("/read/all", controllers.markAllAsRead);
 
 router.use(isAdmin);
-
 router.post("/broadcast", controllers.broadcast);
 
 module.exports = router;

@@ -143,8 +143,15 @@ module.exports.broadcast = async function (req, res, next) {
 
     const { title, message } = req.body;
 
-    // Get all user IDs only
-    const users = await User.findAll({ attributes: ["id"] });
+    // Get all non-admin user IDs only
+    const users = await User.findAll({
+      attributes: ["id"],
+      where: {
+        role: {
+          [Op.not]: "admin",
+        },
+      },
+    });
 
     // Use Promise.all to send notifications in parallel
     await Promise.all(
@@ -159,7 +166,7 @@ module.exports.broadcast = async function (req, res, next) {
 
     res.status(OK).json({
       success: true,
-      message: "Broadcast notification sent to all users",
+      message: "Broadcast notification sent to all non-admin users",
     });
   } catch (error) {
     console.error("Broadcast failed:", error);

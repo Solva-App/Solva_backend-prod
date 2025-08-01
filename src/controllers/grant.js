@@ -97,7 +97,7 @@ module.exports.deleteGrant = async function (req, res, next) {
         res.status(OK).json({
             success: true,
             status: res.statusCode,
-            message: 'Job deleted successfully',
+            message: 'Grant deleted successfully',
             data: grant,
         })
     } catch (error) {
