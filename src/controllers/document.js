@@ -60,6 +60,12 @@ module.exports.uploadDocument = async function(req, res, next) {
                })
           );
 
+                    await sendNotification({
+                target: req.user.id,
+                title : "Uploads Received",
+                message: "You will get a response within 3 days",
+              });
+
           res.status(OK).json({
                success: true,
                status: res.statusCode,
