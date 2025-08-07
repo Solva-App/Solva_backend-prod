@@ -18,6 +18,7 @@ event.on('charge.success', async function (_event, data, req, res, next) {
         user.lastSubscriptionExpiresAt = date // set this to be the next 3 month
         user.lastSubscriptionPlan = data.metadata.type
         user.chargeChannel = data.channel.toLowerCase()
+        user.category = 'premium'
 
         await Transaction.create({
             owner: user.id,
@@ -43,3 +44,4 @@ event.on('charge.success', async function (_event, data, req, res, next) {
 })
 
 module.exports = event
+
