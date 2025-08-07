@@ -100,22 +100,24 @@ module.exports.approveDocument = async function(req, res, next) {
         }
 
         const fee = 100;
-        uploader.balance += fee;
+        if (uploader.category === "premium") {
+            uploader.balance += fee;
+        }
         await uploader.save();
 
         document.status = "approved";
         await document.save();
 
-                  await sendNotification({
-      target: req.user.id,
-      title : "Question Approved",
-      message: "Your question has been approved. You have been credited 100 points.",
-    });
+        await sendNotification({
+            target: document.owner,
+            title : "Question Approved",
+            message: "Your question has been approved",
+        });
 
         res.status(OK).json({
             success: true,
             status: res.statusCode,
-            message: "Document approved successfully and uploader credited.",
+            message: "Document approved successfully.",
             data: {
                 document: document,
                 uploaderBalance: uploader.balance
