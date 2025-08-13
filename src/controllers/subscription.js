@@ -6,11 +6,11 @@ const { stopAutoCharge } = require('../services/scheduler')
 
 module.exports.generateLink = async function (req, res, next) {
     try {
-        if (!['premium', 'basic'].includes(req.params.plan.toLowerCase())) {
+        if (!['premium'].includes(req.params.plan.toLowerCase())) {
             return next(CustomError.badRequest('Please provide a proper plan'))
         }
 
-        const amount = req.params.plan.toLowerCase() === 'premium' ? 1999 : 999
+        const amount = 999
         const callback = req.query.callback
 
         const link = await paystack.generatePaymentLink({
