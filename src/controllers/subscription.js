@@ -29,6 +29,16 @@ module.exports.generateLink = async function (req, res, next) {
             return next(link)
         }
 
+        // create transaction
+        await Transaction.create({
+            owner: req.user.id,
+            success: false,
+            reference: link.data.reference,
+            status: 'initialized',
+            amount: amount,
+            verified: false,
+        })
+
         res.status(OK).json({
             success: true,
             status: res.statusCode,
@@ -67,7 +77,29 @@ module.exports.getSubscriptionStatus = async (req, res, next) => {
 
         const now = new Date();
         if (!lastSubscriptionPlan || !lastSubscriptionExpiresAt || lastSubscriptionExpiresAt < now) {
+            const lastTransaction = await Transaction.findOne({
+                where: { owner: user.id },
+                order: [['createdAt', 'DESC']],
+            });
+
+            if (lastTransaction) {
+                await lastTransaction.update({
+                    status: 'failed',
+                });
+            }
+
             return res.status(200).json({ isSubscribed: false })
+        }
+
+        const lastTransaction = await Transaction.findOne({
+            where: { owner: user.id },
+            order: [['createdAt', 'DESC']],
+        });
+
+        if (lastTransaction) {
+            await lastTransaction.update({
+                status: 'success',
+            });
         }
 
         return res.status(200).json({ isSubscribed: true })

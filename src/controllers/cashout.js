@@ -2,7 +2,9 @@ const CustomError = require('../helpers/error')
 const { Schema } = require('json-validace')
 const Cashout = require('../models/Cashout')
 const User = require('../models/User')
+const Account = require('../models/Account')
 const { OK } = require('http-status-codes')
+const paystack = require('./../http/paystack')
 
 module.exports.createCashout = async function (req, res, next) {
     try {
@@ -28,6 +30,28 @@ module.exports.createCashout = async function (req, res, next) {
         user.balance -= body.amount
         if (user.balance < 0) {
             return next(CustomError.paymentRequiredError('Insufficent Balance'))
+        }
+
+        const account = await Account.findOne({
+            where: {
+                accountNumber: body.accountNumber,
+                bankName: body.bankName,
+            },
+        })
+        if (!account) {
+            const bankCode = await paystack.getBankCode(body.bankName)
+            if (!bankCode) return next(CustomError.badRequest('Bank not found'))
+            const recipient = await paystack.createTransferRecipient({
+                type: 'nuban',
+                name: body.accountName,
+                account_number: body.accountNumber,
+                bank_code: bankCode,
+                currency: 'NGN',
+            })
+            if (!recipient) return next(CustomError.badRequest('Account number is invalid'))
+            const newAccount = await Account.create(result.data)
+            newAccount.receipent_id = recipient.data.recipient_code
+            await newAccount.save()
         }
 
         const cashout = await Cashout.create({
@@ -77,12 +101,33 @@ module.exports.approve = async function (req, res, next) {
             return next(CustomError.badRequest('you have already responded to this cashout request'))
         }
 
+        const recipient_acc = await Account.findOne({
+            where: {
+                accountNumber: cashout.accountNumber,
+                bankName: cashout.bankName,
+            },
+        })
+        if (!recipient_acc) {
+            return next(CustomError.badRequest('Account number is invalid'))
+        }
+
+        const transfer = await paystack.createTransfer({
+          source: "balance",
+          amount: Number(cashout.amount) * 100,
+          recipient: recipient_acc.receipent_id,
+          metadata: JSON.stringify({
+            id: req.user.id,
+            type: 'cashout',
+          }),
+        })
+
         cashout = await cashout.approve()
+
         res.status(OK).json({
             success: true,
             status: res.statusCode,
             message: 'Success',
-            data: cashout,
+            data: cashout
         })
     } catch (error) {
         return next({ error })
