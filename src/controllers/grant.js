@@ -35,7 +35,7 @@ module.exports.createGrant = async function (req, res, next) {
     }
 }
 
-module.exports.getGrant = async function (req, res, next) {
+module.exports.getGrants = async function (req, res, next) {
     try {
         const grants = await Grant.findAll()
         res.status(OK).json({
