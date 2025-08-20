@@ -2,7 +2,7 @@ const router = require('express').Router()
 const { isAdmin, auth } = require('../middlewares/auth')
 const controllers = require('./../controllers/scholarship')
 
-router.get('/', controllers.getScholarship)
+router.get('/', controllers.getScholarships)
 
 router.use(auth)
 router.use(isAdmin)

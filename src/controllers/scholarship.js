@@ -34,7 +34,7 @@ module.exports.createScholarship = async function (req, res, next) {
     }
 }
 
-module.exports.getScholarship = async function (req, res, next) {
+module.exports.getScholarships = async function (req, res, next) {
     try {
         const scholarships = await Scholarship.findAll()
 
