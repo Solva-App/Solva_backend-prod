@@ -104,3 +104,17 @@ module.exports.deleteGrant = async function (req, res, next) {
         return next({ error })
     }
 }
+
+module.exports.getGrant = async function (req, res, next) {
+    try {
+        const grant = await Grant.findByPk(req.params.id)
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'grant fetched successfully',
+            data: grant,
+        })
+    } catch (error) {
+      return next({ error })
+    }
+  }

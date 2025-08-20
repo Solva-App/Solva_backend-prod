@@ -104,3 +104,18 @@ module.exports.deleteScholarship = async function (req, res, next) {
         return next({ error })
     }
 }
+
+module.exports.getScholarship = async function (req, res, next) {
+    try {
+        const scholarship = await Scholarship.findByPk(req.params.id)
+
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'Scholarship fetched successfully',
+            data: scholarship,
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}

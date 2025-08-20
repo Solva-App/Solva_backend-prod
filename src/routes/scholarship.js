@@ -3,6 +3,7 @@ const { isAdmin, auth } = require('../middlewares/auth')
 const controllers = require('./../controllers/scholarship')
 
 router.get('/', controllers.getScholarships)
+router.get('/:id', controllers.getScholarship)
 
 router.use(auth)
 router.use(isAdmin)

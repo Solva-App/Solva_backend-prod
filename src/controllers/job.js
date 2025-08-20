@@ -103,3 +103,18 @@ module.exports.deleteJob = async function (req, res, next) {
     return next({ error });
   }
 };
+
+module.exports.getJob = async function (req, res, next) {
+  try {
+    const job = await Job.findByPk(req.params.id)
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Jobs fetched successfully",
+      data: job,
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
