@@ -74,11 +74,7 @@ module.exports.createCashout = async function (req, res, next) {
 
 module.exports.getCashouts = async function (req, res, next) {
     try {
-        let query = { status: 'awaiting-response' }
-        if (!req.user.isAdmin) {
-            query = { ...query, owner: req.user.id }
-        }
-        const cashouts = await Cashout.findAll({ where: query, order: [['createdAt', 'DESC']] })
+        const cashouts = await Cashout.findAll()
         res.status(OK).json({
             success: true,
             status: res.statusCode,
@@ -153,6 +149,20 @@ module.exports.decline = async function (req, res, next) {
             success: true,
             status: res.statusCode,
             message: 'Success',
+            data: cashout,
+        })
+    } catch (error) {
+        return next({ error })
+    }
+}
+
+module.exports.getCashout = async function (req, res, next) {
+    try {
+        const cashout = await Cashout.findByPk(req.params.id)
+        res.status(OK).json({
+            success: true,
+            status: res.statusCode,
+            message: 'cashout fetched successfully',
             data: cashout,
         })
     } catch (error) {

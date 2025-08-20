@@ -6,6 +6,7 @@ router.use(auth)
 router.post('/create', controllers.createCashout)
 
 router.get('/', controllers.getCashouts)
+router.get('/:id', controllers.getCashout)
 
 router.use(isAdmin)
 router.patch('/decline/:id', controllers.decline)
