@@ -37,12 +37,12 @@ module.exports.createGrant = async function (req, res, next) {
 
 module.exports.getGrant = async function (req, res, next) {
     try {
-        const jobs = await Grant.findAll()
+        const grants = await Grant.findAll()
         res.status(OK).json({
             success: true,
             status: res.statusCode,
             message: 'grant fetched successfully',
-            data: jobs,
+            data: grants,
         })
     } catch (error) {
         return next({ error })
