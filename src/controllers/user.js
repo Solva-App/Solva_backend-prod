@@ -586,15 +586,13 @@ module.exports.adminSendForgotPasswordOTP = async function (req, res, next) {
       return next(CustomError.unauthorizedRequest("Only admin can use this endpoint"));
     }
 
-    // simply call the user version now that we've confirmed admin
     return module.exports.sendForgotPasswordOTP(req, res, next);
   } catch (error) {
-    console.log("Failed to send admin forgot password OTP\n", error);
-    res.status(500).json({ error: "Something went wrong, please retry" });
+    console.log(error);
+    return next({ error });
   }
 };
 
-// use resetForgottenPassword to create another for admin
 module.exports.adminResetForgottenPassword = async function (req, res, next) {
   try {
     const { userId } = req.body;
@@ -605,10 +603,31 @@ module.exports.adminResetForgottenPassword = async function (req, res, next) {
       return next(CustomError.unauthorizedRequest("Only admin can use this endpoint"));
     }
 
-    // simply call the user version now that we've confirmed admin
     return module.exports.resetForgottenPassword(req, res, next);
   } catch (error) {
-    console.log("Failed to send admin forgot password OTP\n", error);
-    res.status(500).json({ error: "Something went wrong, please retry" });
+    console.log(error);
+    return next({ error });
+  }
+};
+
+module.exports.adminGenerateToken = async function (req, res, next) {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return next(CustomError.badRequest("Refresh token field missing"));
+
+    const token = await Token.findOne({ where: { refreshToken } });
+    if (!token) {
+      return next(CustomError.badRequest("Invalid refresh token"));
+    }
+
+    const user = await User.findOne({ where: { id: token.owner } });
+    if (!user || !user.isAdmin) {
+      return next(CustomError.unauthorizedRequest("Only admin can use this endpoint"));
+    }
+
+    return module.exports.generateToken(req, res, next);
+  } catch (error) {
+    console.log(error);
+    return next({ error });
   }
 };
