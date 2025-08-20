@@ -107,6 +107,9 @@ module.exports.deleteJob = async function (req, res, next) {
 module.exports.getJob = async function (req, res, next) {
   try {
     const job = await Job.findByPk(req.params.id)
+    if (!job) {
+      return next(CustomError.badRequest('Invalid job id'))
+    }
     res.status(OK).json({
       success: true,
       status: res.statusCode,
@@ -118,3 +121,16 @@ module.exports.getJob = async function (req, res, next) {
   }
 };
 
+module.exports.getTotalJobs = async function (req, res, next) {
+  try {
+    const totalJobs = await Job.count();
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Jobs fetched successfully",
+      data: totalJobs,
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};

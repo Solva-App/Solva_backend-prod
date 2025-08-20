@@ -631,3 +631,18 @@ module.exports.adminGenerateToken = async function (req, res, next) {
     return next({ error });
   }
 };
+
+module.exports.totalUsers = async function (req, res, next) {
+  try {
+    const totalUsers = await User.count();
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'totalUsers fetched successfully',
+      data: tottotalUsersal,
+    })
+  } catch (error) {
+    console.log(error);
+    return next({ error });
+  }
+}
