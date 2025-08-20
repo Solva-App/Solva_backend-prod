@@ -23,7 +23,6 @@ router.get("/balance/:id", controllers.getUserBalance);
 router.get("/:id", controllers.getUserById);
 
 router.use(isAdmin); // ensure only admins  gets access to the below endpoints
-router.get("/admin/total", controllers.totalUsers);
 router.get("/admin/all", controllers.getAllUsers);
 router.patch("/flag/:id", controllers.flagUsers);
 router.patch("/unflag/:id", controllers.unFlagUsers);

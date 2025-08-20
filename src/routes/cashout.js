@@ -9,7 +9,6 @@ router.get('/', controllers.getCashouts)
 router.get('/:id', controllers.getCashout)
 
 router.use(isAdmin)
-router.get('/approved/total', controllers.getApprovedCashouts)
 router.patch('/decline/:id', controllers.decline)
 router.patch('/approve/:id', controllers.approve)
 

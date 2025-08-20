@@ -172,23 +172,3 @@ module.exports.getCashout = async function (req, res, next) {
     return next({ error })
   }
 }
-
-
-module.exports.getApprovedCashouts = async function (req, res, next) {
-  try {
-    const cashouts = await Cashout.findAll({
-      where: {
-        status: 'approved',
-      },
-    })
-    const total = cashouts.reduce((acc, curr) => acc + Number(curr.amount), 0)
-    res.status(OK).json({
-      success: true,
-      status: res.statusCode,
-      message: 'cashouts fetched successfully',
-      data: total,
-    })
-  } catch (error) {
-    return next({ error })
-  }
-}

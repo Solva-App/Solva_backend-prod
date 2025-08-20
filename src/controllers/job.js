@@ -120,17 +120,3 @@ module.exports.getJob = async function (req, res, next) {
     return next({ error });
   }
 };
-
-module.exports.getTotalJobs = async function (req, res, next) {
-  try {
-    const totalJobs = await Job.count();
-    res.status(OK).json({
-      success: true,
-      status: res.statusCode,
-      message: "Jobs fetched successfully",
-      data: totalJobs,
-    });
-  } catch (error) {
-    return next({ error });
-  }
-};
