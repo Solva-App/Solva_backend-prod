@@ -34,7 +34,7 @@ module.exports.createJob = async function (req, res, next) {
   }
 };
 
-module.exports.getJobs = async function (req, res, next) {
+module.exports.getAllJobs = async function (req, res, next) {
   try {
     const jobs = await Job.findAll();
     res.status(OK).json({
