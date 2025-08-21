@@ -9,7 +9,7 @@ router.get('/', controllers.getPastQuestions)
 router.use(auth)
 
 router.use(isAdmin)
-router.post('/create', fileParser.array('documents', 10), controllers.createPastQuestion)
+router.patch('/edit/:id', controllers.editPastQuestion)
 
 // router.patch('/decline/:id', controllers.declinePastQuestion)
 // router.patch('/approve/:id', controllers.approvePastQuestion)

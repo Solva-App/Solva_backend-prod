@@ -8,6 +8,6 @@ router.post('/upload', fileParser.array('documents', 10), controllers.uploadDocu
 
 router.use(isAdmin)
 router.get('/', controllers.getUploadedDocument)
-router.patch('/approve/:docId', controllers.approveDocument)
+// router.patch('/approve/:docId', controllers.approveDocument)
 
 module.exports = router
