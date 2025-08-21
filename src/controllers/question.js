@@ -32,6 +32,7 @@ module.exports.editPastQuestion = async function (req, res, next) {
 
     const documents = await Document.findAll({
       where: {
+        model: "question",
         modelId: question.id,
         status: "awaiting-approval"
       }
