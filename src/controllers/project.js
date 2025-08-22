@@ -116,3 +116,29 @@ module.exports.getProjects = async function(req, res, next) {
           return next({ error })
      }
 }
+
+module.exports.getProject = async function(req, res, next) {
+     try {
+          const project = await Project.findByPk(req.params.id, {
+               include: [
+                    {
+                         model: Document,
+                         as: 'document',
+                         where: { model: 'project', modelId: req.params.id },
+                    },
+               ],
+          })
+
+          if (!project) {
+               return next(CustomError.notFound('Project not found'));
+          }
+
+          res.status(OK).json({
+               success: true,
+               status: res.statusCode,
+               data: project,
+          })
+     } catch (error) {
+          return next({ error })
+     }
+}
