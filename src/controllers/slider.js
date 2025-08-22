@@ -28,10 +28,10 @@ module.exports.uploadSlideImage = async function (req, res, next) {
             return next(CustomError.badRequest('Invalid request body', result.error))
         }
 
-        const images = await Slide.findAll({})
-        if ([...images, ...files.slides].length > 4) {
-            return next(CustomError.badRequest('You can only have 4 images'))
-        }
+        // const images = await Slide.findAll({})
+        // if ([...images, ...files.slides].length > 4) {
+        //     return next(CustomError.badRequest('You can only have 4 images'))
+        // }
 
         // upload cert to firebase or aws bucket
         for (const file of files.slides) {
@@ -66,7 +66,10 @@ module.exports.uploadSlideImage = async function (req, res, next) {
 
 module.exports.getSlide = async function (req, res, next) {
     try {
-        const slides = await Slide.findAll({})
+        const slides = await Slide.findAll({
+            limit: 4,
+            order: [['createdAt', 'DESC']],
+        })
         res.status(OK).json({
             success: true,
             status: res.statusCode,
