@@ -93,7 +93,7 @@ module.exports.uploadDocument = async function (req, res, next) {
       };
     } else if (body.dropdown === "question") {
       data = {
-        question: await Question.findByPk(modelId),,
+        question: await Question.findByPk(modelId),
         documents,
       };
     }
