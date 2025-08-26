@@ -191,9 +191,8 @@ module.exports.getAllNotifications = async function (req, res, next) {
   }
 };
 
-module.exports.editAndResendNotification = async function (req, res, next) {
+module.exports.editNotification = async function (req, res, next) {
   try {
-    const { title, message } = req.body;
     const schema = new Schema({
       title: { type: "string", required: true },
       message: { type: "string", required: true },
@@ -204,6 +203,9 @@ module.exports.editAndResendNotification = async function (req, res, next) {
       return next(CustomError.badRequest("Invalid request body", result.errors));
     }
 
+    const { user, body } = req;
+    const { title, message } = body;
+
     const notification = await Notification.findByPk(req.params.id);
     if (!notification) {
       return next(CustomError.notFound("Notification not found"));
@@ -213,18 +215,12 @@ module.exports.editAndResendNotification = async function (req, res, next) {
     notification.message = message;
     await notification.save();
 
-    await sendNotification({
-      target: notification.owner,
-      title,
-      message,
-    });
-
     res.status(OK).json({
       success: true,
-      message: "Notification updated and resent to user",
+      message: "Notification updated",
     });
   } catch (error) {
-    console.error("Edit and resend notification failed:", error);
+    console.error("Edit notification failed:", error);
     next(error);
   }
 };

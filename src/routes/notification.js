@@ -14,7 +14,7 @@ router.patch("/read/all", controllers.markAllAsRead);
 router.use(isAdmin);
 router.post("/broadcast", controllers.broadcast);
 router.get("/admin/all", controllers.getAllNotifications);
-router.patch("/edit/:id", controllers.editAndResendNotification);
+router.patch("/edit/:id", controllers.editNotification);
 router.delete("/delete/:id", controllers.deleteNotification);
 
 module.exports = router;
