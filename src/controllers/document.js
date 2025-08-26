@@ -88,7 +88,7 @@ module.exports.uploadDocument = async function (req, res, next) {
     let data;
     if (body.dropdown === "project") {
       data = {
-        project: await Project.findByPk(modelId),,
+        project: await Project.findByPk(modelId),
         documents,
       };
     } else if (body.dropdown === "question") {
