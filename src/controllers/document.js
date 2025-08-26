@@ -55,11 +55,13 @@ module.exports.uploadDocument = async function (req, res, next) {
         owner: req.user.id,
       });
       modelId = project.id;
+      return project;
     } else if (body.dropdown === "question") {
       const question = await Question.create({
         owner: req.user.id,
       });
       modelId = question.id;
+      return question;
     }
 
     const documents = await Document.bulkCreate(
