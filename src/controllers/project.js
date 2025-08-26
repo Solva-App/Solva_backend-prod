@@ -212,7 +212,10 @@ module.exports.approveProject = async function (req, res, next) {
     }
 
     const updatedDocuments = await Document.update(
-      { status: "approved" },
+      {
+        requiresApproval: false,
+        status: "approved"
+      },
       {
         where: {
           model: "project",
@@ -261,7 +264,10 @@ module.exports.declineProject = async function (req, res, next) {
     }
 
     const updatedDocuments = await Document.update(
-      { status: "declined" },
+      {
+        requiresApproval: false,
+        status: "declined"
+      },
       {
         where: {
           model: "project",

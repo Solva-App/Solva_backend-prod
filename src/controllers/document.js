@@ -88,12 +88,12 @@ module.exports.uploadDocument = async function (req, res, next) {
     let data;
     if (body.dropdown === "project") {
       data = {
-        project,
+        project: await Project.findByPk(modelId),,
         documents,
       };
     } else if (body.dropdown === "question") {
       data = {
-        question,
+        question: await Question.findByPk(modelId),,
         documents,
       };
     }

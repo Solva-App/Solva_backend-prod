@@ -219,7 +219,10 @@ module.exports.approvePastQuestion = async function (req, res, next) {
     }
 
     const updatedDocuments = await Document.update(
-      { status: "approved" },
+      {
+        requiresApproval: false,
+        status: "approved"
+      },
       {
         where: {
           model: "question",
@@ -267,7 +270,10 @@ module.exports.declinePastQuestion = async function (req, res, next) {
     }
 
     const updatedDocuments = await Document.update(
-      { status: "declined" },
+      {
+        requiresApproval: false,
+        status: "declined"
+      },
       { where: { model: "question", modelId: question.id, status: "awaiting-approval" } }
     );
 
