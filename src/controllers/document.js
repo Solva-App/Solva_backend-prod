@@ -103,7 +103,7 @@ module.exports.uploadDocument = async function (req, res, next) {
       success: true,
       status: res.statusCode,
       message: "document created successfully",
-      data: project || question, documents
+      data: body.dropdown === "project" ? { project, documents } : { question, documents },
     });
 
     body = null;
