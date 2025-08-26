@@ -83,14 +83,14 @@ module.exports.uploadDocument = async function (req, res, next) {
       message: "You will get a response within 3 days",
     });
 
-    let result;
+    let data;
     if (body.dropdown === "project") {
-      result = {
+      data = {
         project,
         documents,
       };
     } else if (body.dropdown === "question") {
-      result = {
+      data = {
         question,
         documents,
       };
@@ -100,7 +100,7 @@ module.exports.uploadDocument = async function (req, res, next) {
       success: true,
       status: res.statusCode,
       message: "document created successfully",
-      data: result,
+      data: data,
     });
 
     body = null;
