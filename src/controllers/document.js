@@ -85,24 +85,24 @@ module.exports.uploadDocument = async function (req, res, next) {
       message: "You will get a response within 3 days",
     });
 
-    let data;
-    if (body.dropdown === "project") {
-      data = {
-        project: await Project.findByPk(modelId),
-        documents,
-      };
-    } else if (body.dropdown === "question") {
-      data = {
-        question: await Question.findByPk(modelId),
-        documents,
-      };
-    }
+    // let data;
+    // if (body.dropdown === "project") {
+    //   data = {
+    //     project: await Project.findByPk(modelId),
+    //     documents,
+    //   };
+    // } else if (body.dropdown === "question") {
+    //   data = {
+    //     question: await Question.findByPk(modelId),
+    //     documents,
+    //   };
+    // }
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
       message: "document created successfully",
-      data: data,
+      data: project || question, documents
     });
 
     body = null;
