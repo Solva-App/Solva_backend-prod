@@ -192,9 +192,18 @@ module.exports.getAllNotifications = async function (req, res, next) {
 };
 
 module.exports.editAndResendNotification = async function (req, res, next) {
-  const { id, title, message } = req.body;
   try {
-    const notification = await Notification.findByPk(id);
+    const schema = new Schema({
+      title: { type: "string", required: true },
+      message: { type: "string", required: true },
+    });
+
+    const result = schema.validate(req.body);
+    if (result.errors && result.errors.length > 0) {
+      return next(CustomError.badRequest("Invalid request body", result.errors));
+    }
+
+    const notification = await Notification.findByPk(req.params.id);
     if (!notification) {
       return next(CustomError.notFound("Notification not found"));
     }

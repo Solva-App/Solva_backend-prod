@@ -170,6 +170,10 @@ module.exports.deleteProject = async function (req, res, next) {
       return next(CustomError.notFound('Project not found'))
     }
 
+    await Document.destroy({
+      where: { model: "project", modelId: project.id }
+    })
+
     await project.destroy()
 
     res.status(OK).json({
