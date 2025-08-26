@@ -13,6 +13,6 @@ router.post('/create', fileParser.array('documents', 10), controllers.createPast
 router.delete('/:id', controllers.deletePastQuestion)
 router.patch('/decline/:id', controllers.declinePastQuestion)
 router.patch('/approve/:id', controllers.approvePastQuestion)
-router.get("/all", controllers.getAllPastQuestions);
+router.get("/admin/all", controllers.getAllPastQuestions);
 
 module.exports = router

@@ -12,7 +12,7 @@ router.post("/create", fileParser.array("documents", 10), controllers.createProj
 router.patch("/approve/:id", controllers.approveProject);
 router.patch("/decline/:id", controllers.declineProject);
 router.delete("/:id", controllers.deleteProject);
-router.get("/all", controllers.getAllProjects);
+router.get("/admin/all", controllers.getAllProjects);
 
 
 

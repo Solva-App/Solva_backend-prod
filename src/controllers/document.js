@@ -34,6 +34,8 @@ module.exports.uploadDocument = async function (req, res, next) {
       return next(CustomError.badRequest("Invalid request body", result.error));
     }
 
+    let modelId;
+
     // upload cert to firebase or aws bucket
     for (const file of files.documents) {
       const upload = await firebase.fileUpload(file, file.fieldname);
@@ -52,17 +54,19 @@ module.exports.uploadDocument = async function (req, res, next) {
       const project = await Project.create({
         owner: req.user.id,
       });
+      modelId = project.id;
     } else if (body.dropdown === "question") {
       const question = await Question.create({
         owner: req.user.id,
       });
+      modelId = question.id;
     }
 
     const documents = await Document.bulkCreate(
       body.documents.map((d) => {
         return {
           model: body.dropdown,
-          modelId: project.id || question.id,
+          modelId,
           owner: req.user.id,
           url: d.url,
           size: d.size,

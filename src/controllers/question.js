@@ -2,7 +2,7 @@ const { Schema } = require("json-validace");
 const CustomError = require("../helpers/error");
 const image = require("./../helpers/image");
 const firebase = require("./../helpers/firebase");
-const Project = require("../models/Project");
+const User = require("../models/User");
 const Document = require("../models/Document");
 const { OK } = require("http-status-codes");
 const Question = require("../models/Question");
@@ -145,13 +145,13 @@ module.exports.getPastQuestion = async function (req, res, next) {
     const documents = await Document.findAll({
       where: {
         model: "question",
-        modelId: question.id,
+        modelId: req.params.id,
       }
     });
 
-    if (documents.length === 0) {
-      return next(CustomError.notFound("No approved documents found for this question."));
-    }
+    // if (documents.length === 0) {
+    //   return next(CustomError.notFound("No approved documents found for this question."));
+    // }
 
     res.status(OK).json({
       success: true,
@@ -203,7 +203,7 @@ module.exports.approvePastQuestion = async function (req, res, next) {
     });
     req.body.documents = [];
 
-    let { user, body } = req;
+    let { body } = req;
     let files = {
       documents: [],
     };
@@ -263,7 +263,7 @@ module.exports.declinePastQuestion = async function (req, res, next) {
   try {
     const question = await Question.findByPk(req.params.id);
     if (!question) {
-      return next(CustomError.badRequest("Question does not exist"));
+      return next(CustomError.notFound("Question does not exist"));
     }
 
     const updatedDocuments = await Document.update(
@@ -280,9 +280,6 @@ module.exports.declinePastQuestion = async function (req, res, next) {
       return next(CustomError.badRequest("Uploader not found for this question"));
     }
 
-    uploader.balance += 100;
-    await uploader.save();
-
     res.status(OK).json({
       success: true,
       status: res.statusCode,
@@ -295,12 +292,29 @@ module.exports.declinePastQuestion = async function (req, res, next) {
 
 module.exports.getAllPastQuestions = async function (req, res, next) {
   try {
-    const projects = await Project.findAll()
+    const questions = await Question.findAll();
+
+    const questionsWithDocsPromises = questions.map(async (question) => {
+      const docs = await Document.findAll({
+        where: {
+          model: "question",
+          modelId: question.id,
+        },
+      });
+
+      return {
+        question,
+        document: docs,
+      };
+    });
+
+    const questionsWithDocs = await Promise.all(questionsWithDocsPromises);
+
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      data: projects,
+      data: questions,
     })
   } catch (error) {
     return next({ error })
