@@ -193,6 +193,7 @@ module.exports.getAllNotifications = async function (req, res, next) {
 
 module.exports.editAndResendNotification = async function (req, res, next) {
   try {
+    const { title, message } = req.body;
     const schema = new Schema({
       title: { type: "string", required: true },
       message: { type: "string", required: true },
