@@ -146,7 +146,6 @@ module.exports.getPastQuestion = async function (req, res, next) {
       where: {
         model: "question",
         modelId: question.id,
-        status: "approved" // Only fetch approved documents
       }
     });
 
@@ -168,93 +167,142 @@ module.exports.getPastQuestion = async function (req, res, next) {
   }
 };
 
-module.exports.deletePastQuestion = async function(req, res, next) {
-    try {
-        const question = await Question.findByPk(req.params.id);
-        if (!question) {
-            return next(CustomError.badRequest("Question does not exist"));
-        }
-
-        await Document.destroy({
-            where: { model: "question", modelId: question.id }
-        })
-
-        await question.destroy();
-
-        res.status(OK).json({
-            success: true,
-            status: res.statusCode,
-            message: "Question and its documents deleted successfully",
-        });
-    } catch (error) {
-        return next({ error });
+module.exports.deletePastQuestion = async function (req, res, next) {
+  try {
+    const question = await Question.findByPk(req.params.id);
+    if (!question) {
+      return next(CustomError.badRequest("Question does not exist"));
     }
+
+    await Document.destroy({
+      where: { model: "question", modelId: question.id }
+    })
+
+    await question.destroy();
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Question and its documents deleted successfully",
+    });
+  } catch (error) {
+    return next({ error });
+  }
 };
 
-// module.exports.approvePastQuestion = async function(req, res, next) {
-//     try {
-//         const question = await Question.findByPk(req.params.id);
-//         if (!question) {
-//             return next(CustomError.badRequest("Question does not exist"));
-//         }
+module.exports.approvePastQuestion = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      title: { type: "string", required: true },
+      department: { type: "string", required: true },
+      university: { type: "string", required: true },
+      department: { type: "string", required: true },
+      courseCode: { type: "string", required: true },
+      faculty: { type: "string", required: true },
+      documents: { type: "array", required: false },
+    });
+    req.body.documents = [];
 
-//         const updatedDocuments = await Document.update(
-//             { status: "approved" },
-//             { where: { model: "question", modelId: question.id, status: "awaiting-approval" } }
-//         );
+    let { user, body } = req;
+    let files = {
+      documents: [],
+    };
 
-//         if (updatedDocuments[0] === 0) {
-//             return next(CustomError.notFound("No documents awaiting approval for this question."));
-//         }
+    const result = schema.validate({ ...body, ...files });
+    if (result.error) {
+      return next(CustomError.badRequest("Invalid request body", result.error));
+    }
 
-//         const uploader = await User.findByPk(question.owner);
-//         if (!uploader) {
-//             return next(CustomError.badRequest("Uploader not found for this question"));
-//         }
+    const question = await Question.findByPk(req.params.id);
+    if (!question) {
+      return next(CustomError.badRequest("Question does not exist"));
+    }
 
-//         uploader.balance += 100;
-//         await uploader.save();
+    const updatedDocuments = await Document.update(
+      { status: "approved" },
+      {
+        where: {
+          model: "question",
+          modelId: question.id,
+          status: "awaiting-approval"
+        }
+      }
+    );
 
-//         res.status(OK).json({
-//             success: true,
-//             status: res.statusCode,
-//             message: "Question and its documents approved successfully",
-//         });
-//     } catch (error) {
-//         return next({ error });
-//     }
-// };
+    if (updatedDocuments[0] === 0) {
+      return next(CustomError.notFound("No documents awaiting approval for this question."));
+    }
 
-// module.exports.declinePastQuestion = async function(req, res, next) {
-//     try {
-//         const question = await Question.findByPk(req.params.id);
-//         if (!question) {
-//             return next(CustomError.badRequest("Question does not exist"));
-//         }
+    const uploader = await User.findByPk(question.owner);
+    if (!uploader) {
+      return next(CustomError.badRequest("Uploader not found for this question"));
+    }
 
-//         const updatedDocuments = await Document.update(
-//             { status: "declined" },
-//             { where: { model: "question", modelId: question.id, status: "awaiting-approval" } }
-//         );
+    if (uploader.category === "premium") {
+      uploader.balance += 100;
+      await uploader.save();
+    }
 
-//         if (updatedDocuments[0] === 0) {
-//             return next(CustomError.notFound("No documents awaiting approval for this question."));
-//         }
+    await sendNotification({
+      target: question.owner,
+      title: "Question Approved",
+      message: "Your question has been approved",
+    });
 
-//         const uploader = await User.findByPk(question.owner);
-//         if (!uploader) {
-//             return next(CustomError.badRequest("Uploader not found for this question"));
-//         }
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Question approved successfully",
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
 
-//         uploader.balance += 100;
-//         await uploader.save();
+module.exports.declinePastQuestion = async function (req, res, next) {
+  try {
+    const question = await Question.findByPk(req.params.id);
+    if (!question) {
+      return next(CustomError.badRequest("Question does not exist"));
+    }
 
-//         res.status(OK).json({
-//             success: true,
-//             status: res.statusCode,
-//             message: "Question and its documents declined successfully",
-//         });
-//     } catch (error) {
-//         return next({ error });
-//     }
-// };
+    const updatedDocuments = await Document.update(
+      { status: "declined" },
+      { where: { model: "question", modelId: question.id, status: "awaiting-approval" } }
+    );
+
+    if (updatedDocuments[0] === 0) {
+      return next(CustomError.notFound("No documents awaiting approval for this question."));
+    }
+
+    const uploader = await User.findByPk(question.owner);
+    if (!uploader) {
+      return next(CustomError.badRequest("Uploader not found for this question"));
+    }
+
+    uploader.balance += 100;
+    await uploader.save();
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Question and its documents declined successfully",
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
+module.exports.getAllPastQuestions = async function (req, res, next) {
+  try {
+    const projects = await Project.findAll()
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      data: projects,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}

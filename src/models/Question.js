@@ -9,23 +9,23 @@ const questionSchema = {
     },
     title: {
         type: STRING,
-        allowNull: false,
+        allowNull: true,
     },
     university: {
         type: STRING,
-        alowNull: false,
+        alowNull: true,
     },
     faculty: {
         type: STRING,
-        allowNull: false,
+        allowNull: true,
     },
     department: {
         type: STRING,
-        allowNull: false,
+        allowNull: true,
     },
     courseCode: {
         type: STRING,
-        allowNull: false,
+        allowNull: true,
     },
 }
 

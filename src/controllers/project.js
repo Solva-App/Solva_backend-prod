@@ -6,6 +6,7 @@ const Project = require('../models/Project')
 const Document = require('../models/Document')
 const { OK } = require('http-status-codes')
 const { Op } = require('sequelize')
+const { sendNotification } = require("../services/notification");
 
 // create
 module.exports.createProject = async function (req, res, next) {
@@ -84,7 +85,7 @@ module.exports.createProject = async function (req, res, next) {
 
 module.exports.getProjects = async function (req, res, next) {
   try {
-    let body
+    let body;
 
     if (req.query.search) {
       body = {
@@ -100,7 +101,13 @@ module.exports.getProjects = async function (req, res, next) {
     let projects = await Project.findAll(body)
 
     projects = projects.map(async (project) => {
-      const docs = await Document.findAll({ where: { model: 'project', modelId: project.id } })
+      const docs = await Document.findAll({
+        where: {
+          model: 'project',
+          modelId: project.id
+            status: 'approved'
+        },
+      })
       return {
         project: project,
         document: docs,
@@ -124,7 +131,10 @@ module.exports.getProject = async function (req, res, next) {
         {
           model: Document,
           as: 'document',
-          where: { model: 'project', modelId: req.params.id },
+          where: {
+            model: 'project',
+            modelId: project.id
+          },
         },
       ],
     })
@@ -157,6 +167,112 @@ module.exports.deleteProject = async function (req, res, next) {
       success: true,
       status: res.statusCode,
       message: "Project deleted successfully",
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+module.exports.approveProject = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      name: { type: 'string', required: true },
+      description: { type: 'string', required: true },
+      documents: { type: 'array', required: false },
+    })
+
+    req.body.documents = []
+
+    let { body } = req
+    let files = {
+      documents: [],
+    }
+
+    const result = schema.validate({ ...body, ...files })
+
+    const project = await Project.findByPk(req.params.id)
+
+    if (!project) {
+      return next(CustomError.notFound('Project not found'))
+    }
+
+    const updatedDocuments = await Document.update(
+      { status: "approved" },
+      {
+        where: {
+          model: "project",
+          modelId: project.id,
+          status: "awaiting-approval"
+        }
+      }
+    );
+
+    if (updatedDocuments[0] === 0) {
+      return next(CustomError.notFound("No documents awaiting approval for this question."));
+    }
+
+    const uploader = await User.findByPk(project.owner);
+    if (!uploader) {
+      return next(CustomError.badRequest("Uploader not found for this question"));
+    }
+
+    if (uploader.category === "premium") {
+      uploader.balance += 100;
+      await uploader.save();
+    }
+
+    await sendNotification({
+      target: project.owner,
+      title: "Question Approved",
+      message: "Your question has been approved",
+    });
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Project approved successfully",
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.declineProject = async function (req, res, next) {
+  try {
+    const project = await Project.findByPk(req.params.id)
+
+    if (!project) {
+      return next(CustomError.notFound('Project not found'))
+    }
+
+    project.status = 'declined'
+    await project.save()
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Project declined successfully",
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.getAllProjects = async function (req, res, next) {
+  try {
+    const projects = await Project.findAll({
+      include: {
+        model: Document,
+        as: 'document',
+        where: {
+          model: 'project'
+        },
+      },
+    });
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      data: projects,
     })
   } catch (error) {
     return next({ error })

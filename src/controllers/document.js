@@ -5,12 +5,15 @@ const firebase = require("./../helpers/firebase");
 const Document = require("../models/Document");
 const { OK } = require("http-status-codes");
 const User = require("../models/User");
+const Project = require("../models/Project");
+const Question = require("../models/Question");
 const { sendNotification } = require("../services/notification");
 
 module.exports.uploadDocument = async function (req, res, next) {
   try {
     const schema = new Schema({
       documents: { type: "array", required: true },
+      dropdown: { type: "string", required: true },
     });
 
     req.body.documents = [];
@@ -45,12 +48,22 @@ module.exports.uploadDocument = async function (req, res, next) {
       });
     }
 
+    if (body.dropdown === "project") {
+      const project = await Project.create({
+        owner: req.user.id,
+      });
+    } else if (body.dropdown === "question") {
+      const question = await Question.create({
+        owner: req.user.id,
+      });
+    }
+
     const documents = await Document.bulkCreate(
       body.documents.map((d) => {
         return {
-          // model: req.param.filetype,
+          model: body.dropdown,
+          modelId: project.id || question.id,
           owner: req.user.id,
-          // modelId: ,
           url: d.url,
           size: d.size,
           status: "awaiting-approval",

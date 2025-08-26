@@ -9,11 +9,11 @@ const projectSchema = {
     },
     name: {
         type: STRING,
-        allowNull: false,
+        allowNull: true,
     },
     description: {
         type: TEXT,
-        allowNull: false,
+        allowNull: true,
     },
 }
 
