@@ -3,7 +3,6 @@ const CustomError = require("../helpers/error");
 const image = require("./../helpers/image");
 const firebase = require("./../helpers/firebase");
 const Document = require("../models/Document");
-const Question = require("../models/Question");
 const { OK } = require("http-status-codes");
 const User = require("../models/User");
 const { sendNotification } = require("../services/notification");
@@ -46,14 +45,12 @@ module.exports.uploadDocument = async function (req, res, next) {
       });
     }
 
-    const question = await Question.create()
-
     const documents = await Document.bulkCreate(
       body.documents.map((d) => {
         return {
-          model: req.param.filetype,
+          // model: req.param.filetype,
           owner: req.user.id,
-          modelId: question.id,
+          // modelId: ,
           url: d.url,
           size: d.size,
           status: "awaiting-approval",
@@ -72,7 +69,7 @@ module.exports.uploadDocument = async function (req, res, next) {
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: "Question created successfully",
+      message: "document created successfully",
       data: documents,
     });
 
@@ -82,64 +79,113 @@ module.exports.uploadDocument = async function (req, res, next) {
   }
 };
 
-// module.exports.approveDocument = async function (req, res, next) {
-//   try {
-//     const document = await Document.findOne({
-//       where: {
-//         id: req.params.docId,
-//         requiresApproval: true,
-//         status: "awaiting-approval"
-//       },
-//     });
-
-//     if (!document) {
-//       return next(CustomError.badRequest("Document not found, does not require approval, or is already processed."));
-//     }
-
-//     const uploader = await User.findByPk(document.owner);
-//     if (!uploader) {
-//       console.error(`Error: Uploader (ID: ${document.owner}) for document (ID: ${document.id}) not found.`);
-//       return next(CustomError.serverError("Uploader not found for this document. Cannot proceed."));
-//     }
-
-//     const fee = 100;
-//     if (uploader.category === "premium") {
-//       uploader.balance += fee;
-//     }
-//     await uploader.save();
-
-//     document.status = "approved";
-//     await document.save();
-
-//     await sendNotification({
-//       target: document.owner,
-//       title: "Question Approved",
-//       message: "Your question has been approved",
-//     });
-
-//     res.status(OK).json({
-//       success: true,
-//       status: res.statusCode,
-//       message: "Document approved successfully.",
-//       data: {
-//         document: document,
-//         uploaderBalance: uploader.balance
-//       },
-//     });
-//   } catch (error) {
-//     return next({ error });
-//   }
-// };
-
-module.exports.getUploadedDocument = async function (req, res, next) {
+module.exports.approveDocument = async function (req, res, next) {
   try {
-    const document = await Document.findAll({
+    const document = await Document.findOne({
       where: {
+        id: req.params.docId,
         requiresApproval: true,
-        status: "awaiting-approval",
+        status: "awaiting-approval"
       },
     });
 
+    if (!document) {
+      return next(CustomError.badRequest("Document not found, does not require approval, or is already processed."));
+    }
+
+    const uploader = await User.findByPk(document.owner);
+    if (!uploader) {
+      console.error(`Error: Uploader (ID: ${document.owner}) for document (ID: ${document.id}) not found.`);
+      return next(CustomError.serverError("Uploader not found for this document. Cannot proceed."));
+    }
+
+    const fee = 100;
+    if (uploader.category === "premium") {
+      uploader.balance += fee;
+    }
+    await uploader.save();
+
+    document.status = "approved";
+    document.requiresApproval = false;
+    await document.save();
+
+    await sendNotification({
+      target: document.owner,
+      title: "Question Approved",
+      message: "Your question has been approved",
+    });
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Document approved successfully.",
+      data: {
+        document: document,
+        uploaderBalance: uploader.balance
+      },
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
+module.exports.declineDocument = async function (req, res, next) {
+  try {
+    const document = await Document.findByPk(req.params.docId);
+    if (!document) {
+      return next(CustomError.notFound("Document does not exist"));
+    }
+
+    document.status = "declined";
+    await document.save();
+
+    const uploader = await User.findByPk(document.owner);
+    if (!uploader) {
+      return next(CustomError.badRequest("Uploader not found for this document"));
+    }
+
+    uploader.balance += 100;
+    await uploader.save();
+
+    await sendNotification({
+      target: document.owner,
+      title: "Document Declined",
+      message: "Your document has been declined",
+    });
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Document declined successfully.",
+      data: {
+        document: document,
+        uploaderBalance: uploader.balance
+      },
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
+module.exports.getAllUploadedDocuments = async function (req, res, next) {
+  try {
+    const document = await Document.findAll();
+
+    res.status(OK).json({
+      data: document,
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
+
+module.exports.getUploadedDocuments = async function (req, res, next) {
+  try {
+    const document = await Document.findByPk(req.params.docId);
+    if (!document) {
+      return next(CustomError.notFound("Document does not exist"));
+    }
     res.status(OK).json({
       data: document,
     });

@@ -14,6 +14,8 @@ const path = require("path");
 const handlebars = require("handlebars");
 const bcrypt = require("bcryptjs");
 const { HttpStatusCode } = require("axios");
+const PDFDocument = require("pdfkit");
+const firebase = require("./../helpers/firebase");
 
 module.exports.createAccount = async function (req, res, next) {
   try {
@@ -631,3 +633,105 @@ module.exports.adminGenerateToken = async function (req, res, next) {
     return next({ error });
   }
 };
+
+module.exports.downloadAllUsers = async function (req, res, next) {
+  try {
+    // 1. Fetch users from DB using Sequelize
+    const users = await User.findAll({
+      attributes: [
+        'id', 'fullName', 'email', 'phone', 'role', 'balance', 'createdAt'
+      ],
+      order: [['id', 'ASC']]
+    });
+
+    // 2. Create PDF in memory
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    const chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', async () => {
+      try {
+        const pdfBuffer = Buffer.concat(chunks);
+
+        // 3. Prepare a mock file object for Firebase upload
+        const fileObj = {
+          buffer: pdfBuffer,
+          originalname: `users_${Date.now()}.pdf`,
+          mimetype: 'application/pdf'
+        };
+
+        // 4. Upload to Firebase using your helper
+        const downloadURL = await firebase.fileUpload(fileObj, 'reports');
+
+        if (downloadURL instanceof CustomError) {
+          return next(downloadURL);
+        }
+
+        // 5. Send URL as response
+        return res.status(200).json({
+          success: true,
+          message: 'PDF generated and uploaded successfully',
+          url: downloadURL
+        });
+      } catch (uploadErr) {
+        console.error(uploadErr);
+        return next(CustomError.internalServerError('Failed to upload PDF', uploadErr));
+      }
+    });
+
+    // 6. Add content to PDF
+    doc.fontSize(18).text('User Details Report', { align: 'center', underline: true });
+    doc.moveDown(1);
+
+    // Table headers
+    const tableTop = doc.y;
+    const colWidths = [40, 120, 150, 100, 80, 70];
+    const headers = ['ID', 'Name', 'Email', 'Phone', 'Role', 'Balance'];
+
+    doc.fontSize(12).font('Helvetica-Bold');
+    headers.forEach((header, i) => {
+      doc.text(header, 30 + colWidths.slice(0, i).reduce((a, b) => a + b, 0), tableTop, {
+        width: colWidths[i],
+        align: 'left'
+      });
+    });
+
+    doc.moveDown(0.5);
+    doc.moveTo(30, doc.y).lineTo(550, doc.y).stroke();
+
+    doc.font('Helvetica');
+    let yPosition = doc.y + 5;
+
+    users.forEach(user => {
+      const row = [
+        user.id.toString(),
+        user.fullName || 'N/A',
+        user.email || 'N/A',
+        user.phone || 'N/A',
+        user.role || 'N/A',
+        `₦${user.balance || 0}`
+      ];
+
+      row.forEach((text, i) => {
+        doc.text(text, 30 + colWidths.slice(0, i).reduce((a, b) => a + b, 0), yPosition, {
+          width: colWidths[i],
+          align: 'left'
+        });
+      });
+
+      yPosition += 20;
+      doc.moveTo(30, yPosition - 5).lineTo(550, yPosition - 5).stroke();
+    });
+
+    // Footer
+    doc.moveDown(2);
+    doc.fontSize(10).text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' });
+
+    // Finalize the PDF
+    doc.end();
+
+  } catch (error) {
+    console.error(error);
+    return next(CustomError.internalServerError('Something went wrong', error));
+  }
+};
+

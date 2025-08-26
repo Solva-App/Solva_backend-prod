@@ -16,7 +16,7 @@ exports.generateResponse = async (prompt) => {
         { role: 'user', content: prompt },
       ],
       temperature: 0.3,
-      max_tokens: 512,
+      max_tokens: 1024,
     });
 
     return chatCompletion.choices?.[0]?.message?.content || "No response generated.";
@@ -27,3 +27,4 @@ exports.generateResponse = async (prompt) => {
     return 'Sorry, something went wrong.';
   }
 };
+

@@ -13,5 +13,10 @@ router.post(
   fileParser.array("documents", 10),
   controllers.createProject,
 );
+router.delete(
+  "/:id",
+  controllers.deleteProject,
+);
+
 
 module.exports = router;

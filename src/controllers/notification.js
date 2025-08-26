@@ -173,3 +173,68 @@ module.exports.broadcast = async function (req, res, next) {
     next(error);
   }
 };
+
+module.exports.getAllNotifications = async function (req, res, next) {
+  try {
+    const notifications = await Notification.findAll({
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "All notifications fetched successfully",
+      data: notifications,
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
+module.exports.editAndResendNotification = async function (req, res, next) {
+  const { id, title, message } = req.body;
+  try {
+    const notification = await Notification.findByPk(id);
+    if (!notification) {
+      return next(CustomError.notFound("Notification not found"));
+    }
+
+    notification.title = title;
+    notification.message = message;
+    await notification.save();
+
+    await sendNotification({
+      target: notification.owner,
+      title,
+      message,
+    });
+
+    res.status(OK).json({
+      success: true,
+      message: "Notification updated and resent to user",
+    });
+  } catch (error) {
+    console.error("Edit and resend notification failed:", error);
+    next(error);
+  }
+};
+
+module.exports.deleteNotification = async function (req, res, next) {
+  const { id } = req.params;
+  try {
+    const notification = await Notification.findByPk(id);
+    if (!notification) {
+      return next(CustomError.notFound("Notification not found"));
+    }
+
+    await notification.destroy();
+
+    res.status(OK).json({
+      success: true,
+      message: "Notification deleted",
+    });
+  } catch (error) {
+    console.error("Delete notification failed:", error);
+    next(error);
+  }
+};

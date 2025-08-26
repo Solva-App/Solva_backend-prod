@@ -12,4 +12,5 @@ router.post('/create', controllers.createScholarship)
 router.patch('/:id', controllers.updateScholarship)
 router.delete('/:id', controllers.deleteScholarship)
 
+
 module.exports = router

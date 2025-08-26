@@ -5,27 +5,27 @@ const { STRING, INTEGER } = DataTypes
 const questionSchema = {
     owner: {
         type: INTEGER,
-        allowNull: true,
+        allowNull: false,
     },
     title: {
         type: STRING,
-        allowNull: true,
+        allowNull: false,
     },
     university: {
         type: STRING,
-        alowNull: true,
+        alowNull: false,
     },
     faculty: {
         type: STRING,
-        allowNull: true,
+        allowNull: false,
     },
     department: {
         type: STRING,
-        allowNull: true,
+        allowNull: false,
     },
     courseCode: {
         type: STRING,
-        allowNull: true,
+        allowNull: false,
     },
 }
 
@@ -48,4 +48,3 @@ Question.sync({ alter: true })
     })
 
 module.exports = Question
-
