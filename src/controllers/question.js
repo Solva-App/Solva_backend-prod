@@ -320,7 +320,7 @@ module.exports.getAllPastQuestions = async function (req, res, next) {
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      data: questions,
+      data: questionsWithDocs,
     })
   } catch (error) {
     return next({ error })
