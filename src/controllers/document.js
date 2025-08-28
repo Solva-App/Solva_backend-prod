@@ -56,11 +56,13 @@ module.exports.uploadDocument = async function (req, res, next) {
     if (body.dropdown === "project") {
       project = await Project.create({
         owner: req.user.id,
+        requiresApproval: true,
       });
       modelId = project.id;
     } else if (body.dropdown === "question") {
       question = await Question.create({
         owner: req.user.id,
+        requiresApproval: true,
       });
       modelId = question.id;
     }

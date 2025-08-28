@@ -236,6 +236,9 @@ module.exports.approvePastQuestion = async function (req, res, next) {
       return next(CustomError.notFound("No documents awaiting approval for this question."));
     }
 
+    question.requiresApproval = false;
+    await question.save();
+
     const uploader = await User.findByPk(question.owner);
     if (!uploader) {
       return next(CustomError.badRequest("Uploader not found for this question"));
@@ -280,6 +283,9 @@ module.exports.declinePastQuestion = async function (req, res, next) {
     if (updatedDocuments[0] === 0) {
       return next(CustomError.notFound("No documents awaiting approval for this question."));
     }
+
+    question.requiresApproval = false;
+    await question.save();
 
     const uploader = await User.findByPk(question.owner);
     if (!uploader) {
