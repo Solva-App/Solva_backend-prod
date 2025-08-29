@@ -46,10 +46,10 @@ module.exports.createAccount = async function (req, res, next) {
     const isPhoneUsed = await User.findOne({ where: { phone: body.phone } });
 
     if (isEmailUsed) {
-      return next(CustomError.unauthorizedRequest("Email already in use!"));
+      return next(CustomError.badRequest("Email already in use!"));
     } else if (isPhoneUsed) {
       return next(
-        CustomError.unauthorizedRequest("Phone number is already used!"),
+        CustomError.badRequest("Phone number is already used!"),
       );
     }
 

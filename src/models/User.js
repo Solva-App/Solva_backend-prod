@@ -155,7 +155,7 @@ User.verifyLoginCredentials = async function (credentials) {
     user.password,
   );
   if (!isPasswordSimilarToDB)
-    return CustomError.unauthorizedRequest("username or password is incorrect");
+    return CustomError.badRequest("username or password is incorrect");
 
   return user;
 };
