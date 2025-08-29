@@ -8,19 +8,27 @@ function initNotificationIO(io) {
 }
 
 async function sendNotification({ target, title, message }) {
-  const notification = await Notification.create({
+  return Notification.create({
     owner: target,
     title,
     message,
     isRead: false,
-  });
+  }).then(async (notification) => {
+    const sockets = await Socket.findAll({
+      where: {
+        owner: {
+          [Op.in]: target,
+        },
+      },
+    });
 
-    const socketMapping = await Socket.findOne({ where: { owner: target } });
-
-    if (socketMapping?.socket && ioInstance) {
-      ioInstance.to(socketMapping.socket).emit("notification", notification);
+    if (ioInstance) {
+      sockets.forEach((socket) => {
+        ioInstance.to(socket.socket).emit("notification", notification);
+      });
     }
-  return notification;
+    return notification;
+  });
 }
 
 module.exports = {

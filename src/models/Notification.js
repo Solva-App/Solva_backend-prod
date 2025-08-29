@@ -1,10 +1,10 @@
 const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
-const { STRING, INTEGER, BOOLEAN, TEXT } = DataTypes
+const { STRING, ARRAY, BOOLEAN, TEXT } = DataTypes
 
 const notificationSchema = {
   owner: {
-    type: INTEGER,
+    type: ARRAY,
     allowNull: false
   },
   title: {
