@@ -226,15 +226,15 @@ module.exports.approveProject = async function (req, res, next) {
     );
 
     if (updatedDocuments[0] === 0) {
-      return next(CustomError.notFound("No documents awaiting approval for this project."));
+      return next(CustomError.notFound("No documents awaiting approval for this question."));
     }
 
-    project.requiresApproval = false;
-    await project.save();
+    question.requiresApproval = false;
+    await question.save();
 
     const uploader = await User.findByPk(project.owner);
     if (!uploader) {
-      return next(CustomError.badRequest("Uploader not found for this project"));
+      return next(CustomError.badRequest("Uploader not found for this question"));
     }
 
     if (uploader.category === "premium") {

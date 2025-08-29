@@ -23,7 +23,7 @@ module.exports.sendNotification = async function (req, res, next) {
     const { title, message } = body;
 
     const notification = await sendNotification({
-      target: [user.id],
+      target: user.id,
       title,
       message,
     });
