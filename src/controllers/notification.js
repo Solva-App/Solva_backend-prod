@@ -2,6 +2,7 @@ const CustomError = require('../helpers/error')
 const { Schema } = require('json-validace')
 const Notification = require('../models/Notification')
 const { OK } = require('http-status-codes')
+const { Op } = require('sequelize')
 const Socket = require('../models/Socket')
 const { sendNotification } = require("../services/notification");
 const User = require('../models/User')
