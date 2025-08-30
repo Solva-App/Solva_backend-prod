@@ -18,7 +18,7 @@ module.exports.createPastQuestion = async function (req, res, next) {
       department: { type: "string", required: true },
       courseCode: { type: "string", required: true },
       faculty: { type: "string", required: true },
-      documents: { type: "array", required: false },
+      documents: { type: "array", required: true },
     });
     req.body.documents = [];
 
@@ -56,9 +56,9 @@ module.exports.createPastQuestion = async function (req, res, next) {
 
     const question = await Question.create({
       ...body,
-      documents: undefined,
       owner: req.user.id,
     });
+
     const documents = await Document.bulkCreate(
       body.documents.map((d) => {
         return {

@@ -15,7 +15,7 @@ module.exports.createProject = async function (req, res, next) {
     const schema = new Schema({
       name: { type: 'string', required: true },
       description: { type: 'string', required: true },
-      documents: { type: 'array', required: false },
+      documents: { type: 'array', required: true },
     })
     req.body.documents = []
 
@@ -49,9 +49,8 @@ module.exports.createProject = async function (req, res, next) {
     }
 
     const project = await Project.create({
-      name: body.name,
+      ...body,
       owner: req.user.id,
-      description: body.description,
     })
 
     const documents = await Document.bulkCreate(
@@ -64,8 +63,8 @@ module.exports.createProject = async function (req, res, next) {
           size: d.size,
           name: d.name,
           mimetype: d.mimetype,
-          requiresApproval: false,
-          status: 'approved',
+          status: "awaiting-approval",
+          requiresApproval: true,
         }
       })
     )
