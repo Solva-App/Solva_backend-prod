@@ -648,6 +648,7 @@ module.exports.downloadAllUsers = async function (req, res, next) {
     const doc = new PDFDocument({ margin: 30, size: 'A4' });
     const chunks = [];
     doc.on('data', chunk => chunks.push(chunk));
+
     doc.on('end', async () => {
       try {
         const pdfBuffer = Buffer.concat(chunks);
@@ -679,7 +680,7 @@ module.exports.downloadAllUsers = async function (req, res, next) {
     });
 
     // 6. Add content to PDF
-    doc.fontSize(18).text('User Details Report', { align: 'center', underline: true });
+    doc.fontSize(16).text('User Details Report', { align: 'center', underline: true });
     doc.moveDown(1);
 
     // Table headers
@@ -687,7 +688,7 @@ module.exports.downloadAllUsers = async function (req, res, next) {
     const colWidths = [40, 120, 150, 100, 80, 70];
     const headers = ['ID', 'Name', 'Email', 'Phone', 'Role', 'Balance'];
 
-    doc.fontSize(12).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica-Bold');
     headers.forEach((header, i) => {
       doc.text(header, 30 + colWidths.slice(0, i).reduce((a, b) => a + b, 0), tableTop, {
         width: colWidths[i],
@@ -724,7 +725,7 @@ module.exports.downloadAllUsers = async function (req, res, next) {
 
     // Footer
     doc.moveDown(2);
-    doc.fontSize(10).text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.fontSize(8).text(`Generated on: ${new Date().toLocaleString()}`, 30, yPosition + 5);
 
     // Finalize the PDF
     doc.end();
