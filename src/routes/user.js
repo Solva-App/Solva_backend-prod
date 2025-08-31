@@ -21,7 +21,7 @@ router.patch("/update/password", controllers.updatePassword);
 router.patch("/", controllers.updateProfile);
 router.get("/balance/:id", controllers.getUserBalance);
 router.get("/:id", controllers.getUserById);
-router.post("/device/token", controllers.storeDeviceToken);
+// router.post("/device/token", controllers.storeDeviceToken);
 
 router.use(isAdmin); // ensure only admins  gets access to the below endpoints
 router.get("/admin/all", controllers.getAllUsers);

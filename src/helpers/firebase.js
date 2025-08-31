@@ -21,21 +21,21 @@ module.exports.fileUpload = async function (file, location) {
   }
 }
 
-module.exports.sendNotification = async (token, { title, body, data }) => {
-  try {
-    const response = await messaging.sendToToken(token, {
-      data,
-      notification: {
-        title,
-        body
-      }
-    })
-    return response
-  } catch (error) {
-    console.log(error)
-    return CustomError.internalServerError('Something went wrong', error)
-  }
-}
+// module.exports.sendNotification = async (token, { title, body, data }) => {
+//   try {
+//     const response = await messaging.sendToToken(token, {
+//       data,
+//       notification: {
+//         title,
+//         body
+//       }
+//     })
+//     return response
+//   } catch (error) {
+//     console.log(error)
+//     return CustomError.internalServerError('Something went wrong', error)
+//   }
+// }
 
 
 // module.exports.getNotificationToken = async function () {
