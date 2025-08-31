@@ -2,7 +2,7 @@ const CustomError = require('../helpers/error')
 const { Schema } = require('json-validace')
 const Notification = require('../models/Notification')
 const { OK } = require('http-status-codes')
-const { Op } = require('sequelize')
+const { Op, literal } = require('sequelize')
 const Socket = require('../models/Socket')
 const { sendNotification } = require("../services/notification");
 const User = require('../models/User')
@@ -12,6 +12,7 @@ module.exports.sendNotification = async function (req, res, next) {
     const schema = new Schema({
       title: { type: "string", required: true },
       message: { type: "string", required: true },
+      target: { type: "array", required: true },
     });
 
     const result = schema.validate(req.body);
@@ -20,54 +21,59 @@ module.exports.sendNotification = async function (req, res, next) {
     }
 
     const { user, body } = req;
-    const { title, message } = body;
+    const { title, message, target } = body;
 
-    const notification = await sendNotification({
-      target: user.id,
-      title,
-      message,
-    });
+    const notification = await sendNotification({ target, title, message });
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
       message: "Notification sent successfully",
-      data: notification,
+      data: {
+        title: notification.title,
+        message: notification.message,
+      },
     });
   } catch (error) {
     return next({ error });
   }
 };
 
-module.exports.getUnreadNotifications = async function (req, res, next) {
+module.exports.getUserUnreadNotifications = async function (req, res, next) {
   try {
     const { user } = req;
     const owner = user.id;
 
     const unread = await Notification.findAll({
-      where: { owner, isRead: false },
-      order: [["createdAt", "DESC"]],
+      where: literal(`
+        JSON_CONTAINS(owner, '${owner}', '$')
+        AND NOT JSON_CONTAINS(readBy, '${owner}', '$')
+      `),
+      order: [['createdAt', 'DESC']]
     });
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: "Unread notifications fetched successfully",
-      data: unread,
+      message: 'Unread notifications fetched successfully',
+      data: unread
     });
   } catch (error) {
+    console.error('Error fetching unread notifications:', error);
     return next({ error });
   }
 };
 
-module.exports.getAllNotifications = async function (req, res, next) {
+module.exports.getAllUserNotifications = async function (req, res, next) {
   try {
     const { user } = req;
     const owner = user.id;
 
     const notifications = await Notification.findAll({
-      where: { owner },
-      order: [["createdAt", "DESC"]],
+      where: {
+        owner: { [Op.substring]: [owner] },
+      },
+      order: [['createdAt', 'DESC']],
     });
 
     res.status(OK).json({
@@ -85,48 +91,80 @@ module.exports.markNotificationAsRead = async function (req, res, next) {
   try {
     const { user } = req;
     const owner = user.id;
+    const { id } = req.params;
 
-    const id = req.params.id;
-
-    const notification = await Notification.findOne({
-      where: { id, owner },
-    });
+    const notification = await Notification.findByPk(id);
 
     if (!notification) {
-      return next(CustomError.notFound("Notification not found"));
+      return res.status(404).json({ error: 'Notification not found' });
     }
 
-    notification.isRead = true;
-    await notification.save();
+    if (!notification.owner.includes(owner)) {
+      return res.status(403).json({ error: 'You are not the owner of this notification' });
+    }
+
+    let readBy = JSON.parse(notification.readBy || "[]");
+
+    if (!readBy.includes(owner)) {
+      readBy.push(owner);
+    }
+
+    await notification.update({ readBy: readBy });
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: "Notification marked as read",
-      data: notification,
+      message: 'Notification marked as read',
+      data: notification
     });
   } catch (error) {
+    console.error('Error marking notification as read:', error);
     return next({ error });
   }
 };
 
-module.exports.markAllAsRead = async function (req, res, next) {
+module.exports.markAllUserNotificationsAsRead = async (req, res, next) => {
   try {
     const { user } = req;
     const owner = user.id;
 
-    const [updatedCount] = await Notification.update(
-      { isRead: true },
-      { where: { owner, isRead: false } }
-    );
+    const notifications = await Notification.findAll({
+      where: {
+        owner: { [Op.substring]: [owner] }
+      },
+    });
 
-    res.status(OK).json({
+    if (!notifications.length) {
+      return res.status(200).json({
+        success: true,
+        status: res.statusCode,
+        message: 'No notifications to mark as read',
+      });
+    }
+
+    let updatedCount = 0;
+
+    for (const notification of notifications) {
+      let readBy = JSON.parse(notification.readBy || '[]');
+
+      if (!readBy.includes(owner)) {
+        readBy.push(owner);
+        await notification.update({ readBy: readBy });
+        updatedCount++;
+      }
+    }
+
+    res.status(200).json({
       success: true,
       status: res.statusCode,
-      message: `${updatedCount} notifications marked as read`,
+      message: `${updatedCount} notification(s) marked as read`,
     });
   } catch (error) {
-    return next({ error });
+    return next({
+      status: 500,
+      message: 'Failed to mark notifications as read',
+      error: error.message,
+    });
   }
 };
 
@@ -144,26 +182,21 @@ module.exports.broadcast = async function (req, res, next) {
 
     const { title, message } = req.body;
 
-    // Get all non-admin user IDs only
-    const users = await User.findAll({
+    const userIds = (await User.findAll({
       attributes: ["id"],
       where: {
         role: {
           [Op.not]: "admin",
         },
       },
-    });
+    })).map(user => user.id);
 
-    // Use Promise.all to send notifications in parallel
-    await Promise.all(
-      users.map((user) =>
-        sendNotification({
-          target: user.id,
-          title,
-          message,
-        })
-      )
-    );
+
+    sendNotification({
+      target: userIds,
+      title,
+      message,
+    })
 
     res.status(OK).json({
       success: true,

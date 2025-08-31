@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 module.exports = {
-  messaging: {
+  serviceAccount: {
     type: process.env.FIREBASE_TYPE,
     project_id: process.env.FIREBASE_PROJECT_ID,
     private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
@@ -22,5 +22,8 @@ module.exports = {
     messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.FIREBASE_APP_ID,
     measurementId: process.env.FIREBASE_MEASUREMENT_ID
-  }
+  },
+  messaging: {
+    publicVapidKey: process.env.FIREBASE_PUBLIC_VAPID_KEY
+  },
 };

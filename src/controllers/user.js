@@ -735,4 +735,27 @@ module.exports.downloadAllUsers = async function (req, res, next) {
     return next(CustomError.internalServerError('Something went wrong', error));
   }
 };
+module.exports.storeDeviceToken = async function (req, res, next) {
+  try {
+    const user = req.user;
+    if (!user) return next(CustomError.unauthorizedRequest("User not authenticated"));
+
+    // 3. Add token to Firebase Messaging
+    const notificationToken = await firebase.getNotificationToken();
+    if (!notificationToken.token) return next(CustomError.badRequest("Failed to get notification token"));
+
+    // 4. Store token in user's record
+    // await user.update({ notificationToken: notifToken });
+
+    // 5. Return success response
+    return res.status(200).json({
+      success: true,
+      message: "Firebase messaging token stored successfully",
+      token: notificationToken.token
+    });
+  } catch (error) {
+    console.error(error);
+    return next(CustomError.internalServerError('Something went wrong', error));
+  }
+};
 

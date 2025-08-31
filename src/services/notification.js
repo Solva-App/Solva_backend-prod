@@ -8,19 +8,41 @@ function initNotificationIO(io) {
 }
 
 async function sendNotification({ target, title, message }) {
-  const notification = await Notification.create({
-    owner: target,
-    title,
-    message,
-    isRead: false,
-  });
-
-    const socketMapping = await Socket.findOne({ where: { owner: target } });
-
-    if (socketMapping?.socket && ioInstance) {
-      ioInstance.to(socketMapping.socket).emit("notification", notification);
+  try {
+    if (!Array.isArray(target) || target.length === 0) {
+      throw new Error("Target must be a non-empty array of user IDs");
     }
-  return notification;
+    if (!title || !message) {
+      throw new Error("Title and message are required for notifications");
+    }
+
+    const notification = await Notification.create({
+      owner: target,
+      title,
+      message,
+      readBy: [],
+    });
+
+    for (const userId of target) {
+      const socketMapping = await Socket.findOne({ where: { owner: userId } });
+
+      if (socketMapping?.socket && ioInstance) {
+        ioInstance.to(socketMapping.socket).emit("notification", {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+        });
+        console.log(`Notification sent to user ${userId}`);
+      } else {
+        console.warn(`No active socket for user ${userId}`);
+      }
+    }
+
+    return notification;
+  } catch (error) {
+    console.error("Error sending notification:", error.message);
+    throw error;
+  }
 }
 
 module.exports = {
