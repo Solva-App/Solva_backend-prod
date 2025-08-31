@@ -250,7 +250,7 @@ module.exports.approvePastQuestion = async function (req, res, next) {
     }
 
     await sendNotification({
-      target: question.owner,
+      target: [question.owner],
       title: "Question Approved",
       message: "Your question has been approved",
     });

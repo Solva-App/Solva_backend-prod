@@ -83,7 +83,7 @@ module.exports.uploadDocument = async function (req, res, next) {
     );
 
     await sendNotification({
-      target: req.user.id,
+      target: [req.user.id],
       title: "Uploads Received",
       message: "You will get a response within 3 days",
     });
@@ -145,7 +145,7 @@ module.exports.approveDocument = async function (req, res, next) {
     await document.save();
 
     await sendNotification({
-      target: document.owner,
+      target: [document.owner],
       title: "Question Approved",
       message: "Your question has been approved",
     });
@@ -183,7 +183,7 @@ module.exports.declineDocument = async function (req, res, next) {
     await uploader.save();
 
     await sendNotification({
-      target: document.owner,
+      target: [document.owner],
       title: "Document Declined",
       message: "Your document has been declined",
     });

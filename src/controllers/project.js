@@ -242,7 +242,7 @@ module.exports.approveProject = async function (req, res, next) {
     }
 
     await sendNotification({
-      target: project.owner,
+      target: [project.owner],
       title: "Project Approved",
       message: "Your project has been approved",
     });
