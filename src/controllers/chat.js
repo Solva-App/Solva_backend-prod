@@ -43,38 +43,38 @@ module.exports.handleChat = async function (req, res, next) {
 
     const aiResponse = await generateResponse(prompt);
 
-    // const socketMapping = await Socket.findOne({ where: { owner } });
+    const socketMapping = await Socket.findOne({ where: { owner } });
 
-    // if (!socketMapping) {
-    //   console.log(`No socket mapping found for owner: ${owner}`);
-    //   return res.status(401).json({
-    //     success: true,
-    //     status: 401,
-    //     message: "User is not connected via socket",
-    //     // data: { prompt, response: aiResponse }
-    //   });
-    // }
+    if (!socketMapping) {
+      console.log(`No socket mapping found for owner: ${owner}`);
+      return res.status(401).json({
+        success: true,
+        status: 401,
+        message: "User is not connected via socket",
+        // data: { prompt, response: aiResponse }
+      });
+    }
 
-    // const socketId = socketMapping.socket;
-    // const io = req.app.get("io");
-    // const socket = io.sockets.sockets.get(socketId);
+    const socketId = socketMapping.socket;
+    const io = req.app.get("io");
+    const socket = io.sockets.sockets.get(socketId);
 
-    // if (!socket || !socket.connected) {
-    //   console.log(`Socket not connected for user: ${owner}, Socket ID: ${socketId}`);
-    //   return res.status(401).json({
-    //     success: true,
-    //     status: 401,
-    //     message: "Socket is not active",
-    //     // data: { prompt, response: aiResponse }
-    //   });
-    // }
+    if (!socket || !socket.connected) {
+      console.log(`Socket not connected for user: ${owner}, Socket ID: ${socketId}`);
+      return res.status(401).json({
+        success: true,
+        status: 401,
+        message: "Socket is not active",
+        // data: { prompt, response: aiResponse }
+      });
+    }
 
     const chat = await Chat.create({ prompt, response: aiResponse, owner });
 
-    // io.to(socketId).emit("chatReply", {
-    //   prompt: chat.prompt,
-    //   response: chat.response,
-    // });
+    io.to(socketId).emit("chatReply", {
+      prompt: chat.prompt,
+      response: chat.response,
+    });
 
     return res.status(200).json({
       success: true,
