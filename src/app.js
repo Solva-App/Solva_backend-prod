@@ -23,8 +23,14 @@ const io = new socket.Server(server,{
     methods: ['GET', 'POST'],
   },
 });
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
-app.use(cors());
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(morgan("tiny"));
