@@ -36,7 +36,7 @@ module.exports = function setupSocket(io) {
       }
       await Socket.upsert({ owner: userId, socket: socketId });
       console.log(`User connected: ${userId}, Socket ID: ${socketId}`);
-      // socket.join(socketId);
+      socket.join(socketId);
     }
 
     socket.on("disconnect", async () => {
