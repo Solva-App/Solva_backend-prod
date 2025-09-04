@@ -24,9 +24,7 @@ const io = new socket.Server(server,{
   },
 });
 const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: '*'
 };
 
 
