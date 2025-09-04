@@ -115,6 +115,12 @@ module.exports.login = async function (req, res, next) {
     if (tokens instanceof CustomError) {
       return next(tokens);
     }
+
+    const freelancerProfile = await Freelancer.findOne({ where: { owner: user.id }, attributes: ['id'] });
+    if (freelancerProfile) {
+      user.dataValues.freelancer = freelancerProfile.id;
+    }
+
     res.status(StatusCodes.OK).json({
       success: true,
       status: res.statusCode,
