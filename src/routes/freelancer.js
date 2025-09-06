@@ -4,7 +4,6 @@ const { auth } = require('../middlewares/auth')
 const controllers = require('./../controllers/freelancer')
 
 router.get('/comment/:freelancerId', controllers.getFreelancerComments)
-router.post('/create/comment/:freelancerId', controllers.addComment)
 
 router.use(auth)
 
@@ -13,5 +12,6 @@ router.get('/', controllers.getFreelancers)
 router.get('/catigories', controllers.getCatigories)
 router.get('/:id', controllers.getFreelancer)
 router.patch('/edit', fileParser.single('profilePic'), controllers.editFreelancerProfile)
+router.post('/create/comment/:freelancerId', controllers.addComment)
 
 module.exports = router

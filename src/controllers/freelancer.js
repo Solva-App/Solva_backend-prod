@@ -210,6 +210,10 @@ module.exports.addComment = async function (req, res, next) {
       return next(CustomError.badRequest("Invalid freelancer id"));
     }
 
+    if(req.user.id === freelancer.owner) {
+      return next(CustomError.badRequest("Freelancer can't comment on their profile"))
+    }
+
     const comment = await Comment.create({
       freelancer: req.params.freelancerId,
       ...body,
