@@ -9,7 +9,7 @@ const event = new EventEmitter()
 
 event.on('charge.success', async function (_event, data, req, res, next) {
     try {
-        const monthsToAdd = data?.metadata?.type === 'basic' ? 1 : 3;
+        const monthsToAdd = data?.metadata?.type === 3;
         const date = new Date()
         date.setMonth(date.getMonth() + monthsToAdd);
 

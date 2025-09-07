@@ -9,7 +9,7 @@ const initiateCharge = function (user) {
     console.log(`Charge will be initiated ${formatDate(user.lastSubscriptionExpiresAt)}`, user.email)
     return async () => {
         // console.log('charge in progress')
-        const amount = user.lastSubscriptionPlan === 'premium' ? 1999 : 999
+        const amount = user.lastSubscriptionPlan === 999
         // initiate the charge
         const charge = await paystack.chargeCard({
             email: user.email,

@@ -18,7 +18,7 @@ module.exports.generateLink = async function (req, res, next) {
       email: req.user.email,
       full_name: req.user.fullName,
       callback_url: callback ? callback.toLowerCase().trim() : undefined,
-      channels: ['card'],
+      // channels: ['card', 'transfer'],
       metadata: JSON.stringify({
         id: req.user.id,
         type: req.params.plan,
