@@ -13,7 +13,7 @@ router.patch("/approve/:id", controllers.approveProject);
 router.patch("/decline/:id", controllers.declineProject);
 router.delete("/:id", controllers.deleteProject);
 router.get("/admin/all", controllers.getAllProjects);
-
+router.patch('/upload/:id', controllers.uploadProjects)
 
 
 module.exports = router;

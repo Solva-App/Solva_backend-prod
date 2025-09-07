@@ -19,10 +19,10 @@ const projectSchema = {
     type: BOOLEAN,
     defaultValue: true,
   },
-  uploadedToUser: {
-    type: BOOLEAN,
-    defaultValue: false,
-  }
+  // uploadedToUser: {
+  //   type: BOOLEAN,
+  //   defaultValue: false,
+  // }
 }
 
 const Project = sequelize.define('Project', projectSchema, {

@@ -185,6 +185,7 @@ module.exports.deleteProject = async function (req, res, next) {
     return next({ error })
   }
 }
+
 module.exports.approveProject = async function (req, res, next) {
   try {
     const schema = new Schema({
@@ -330,7 +331,8 @@ module.exports.getAllProjects = async function (req, res, next) {
   }
 }
 
-module.exports.uploadPastQuestion = async function (req, res, next) {
+
+module.exports.uploadProjects = async function (req, res, next) {
   try {
     const schema = new Schema({
       name: { type: 'string', required: true },
@@ -354,8 +356,22 @@ module.exports.uploadPastQuestion = async function (req, res, next) {
       return next(CustomError.badRequest("Project does not exist"));
     }
 
-    project.uploadedToUser = true;
-    await project.save();
+    const updatedDocuments = await Document.update(
+      {
+        uploadedToUser: true,
+      },
+      {
+        where: {
+          model: "question",
+          modelId: question.id,
+          status: "approved"
+        }
+      }
+    );
+
+    if (updatedDocuments[0] === 0) {
+      return next(CustomError.notFound("No approved documents found for this question."));
+    }
 
     res.status(OK).json({
       success: true,
