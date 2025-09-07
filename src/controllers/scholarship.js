@@ -17,8 +17,6 @@ module.exports.createScholarship = async function (req, res, next) {
     const scholarship = await Scholarship.create({
       owner: req.user.id,
       link: req.body.link,
-      name: req.body.name,
-      description: req.body.description,
     })
 
     res.status(OK).json({
