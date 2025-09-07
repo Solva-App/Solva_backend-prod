@@ -195,21 +195,6 @@ module.exports.deletePastQuestion = async function (req, res, next) {
 
 module.exports.approvePastQuestion = async function (req, res, next) {
   try {
-    const schema = new Schema({
-      documents: { type: "array", required: true },
-    });
-    req.body.documents = [];
-
-    let { body } = req;
-    let files = {
-      documents: [],
-    };
-
-    const result = schema.validate({ ...body, ...files });
-    if (result.error) {
-      return next(CustomError.badRequest("Invalid request body", result.error));
-    }
-
     const question = await Question.findByPk(req.params.id);
     if (!question) {
       return next(CustomError.badRequest("Question does not exist"));
