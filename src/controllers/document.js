@@ -254,18 +254,12 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
       return next(CustomError.notFound("Document does not exist"));
     }
 
-    const model =
-      document.model === "project"
-        ? await Project.create({
-            owner: req.user.id,
-            requiresApproval: true,
-            ...req.body,
-          })
-        : await Question.create({
-            owner: req.user.id,
-            requiresApproval: true,
-            ...req.body,
-          });
+    const previousModel = document.model === "project" ? await Project.findByPk(document.modelId) : await Question.findByPk(document.modelId);
+    if (!previousModel) {
+      return next(CustomError.notFound(`Previous ${document.model} does not exist`));
+    }
+
+    const model = document.model === "project" ? await Project.create({ ...previousModel.dataValues, owner: req.user.id, requiresApproval: false, ...req.body }) : await Question.create({ ...previousModel.dataValues, owner: req.user.id, requiresApproval: false, ...req.body });
 
     const updatedDocument = await Document.update(
       {
@@ -284,6 +278,17 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
       return next(CustomError.notFound("No document found with that id"));
     }
 
+    const documents = await Document.findAll({
+      where: {
+        model: document.model,
+        modelId: previousModel.id,
+      },
+    });
+
+    if (documents.length === 0) {
+      await previousModel.destroy();
+    }
+
     res.status(OK).json({
       success: true,
       status: res.statusCode,
@@ -297,3 +302,4 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
     return next({ error });
   }
 };
+
