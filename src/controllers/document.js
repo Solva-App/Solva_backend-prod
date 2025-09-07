@@ -254,7 +254,7 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
       return next(CustomError.notFound("Document does not exist"));
     }
 
-    const previousModel = document.model === "project" ? await Project.findByPk(document.modelId) : await Question.findBpyPk(document.modelId);
+    const previousModel = document.model === "project" ? await Project.findByPk(document.modelId) : await Question.findByPk(document.modelId);
     if (!previousModel) {
       return next(CustomError.notFound(`Previous ${document.model} does not exist`));
     }
