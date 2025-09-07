@@ -6,9 +6,7 @@ const Scholarship = require('../models/Scholarship')
 module.exports.createScholarship = async function (req, res, next) {
   try {
     const schema = new Schema({
-      name: { type: 'string', required: true },
       link: { type: 'string', required: true },
-      description: { type: 'string', required: true },
     })
 
     const result = schema.validate(req.body)
@@ -52,9 +50,7 @@ module.exports.getScholarships = async function (req, res, next) {
 module.exports.updateScholarship = async function (req, res, next) {
   try {
     const schema = new Schema({
-      name: { type: 'string', required: false },
       link: { type: 'string', required: false },
-      description: { type: 'string', required: false },
     })
 
     const result = schema.validate(req.body)
@@ -67,9 +63,7 @@ module.exports.updateScholarship = async function (req, res, next) {
       return next(CustomError.badRequest('Scholarship with that id does not exist'))
     }
 
-    scholarship.name = req.body.name ?? scholarship.name
     scholarship.link = req.body.link ?? scholarship.link
-    scholarship.description = req.body.description ?? scholarship.description
 
     await scholarship.save()
 
