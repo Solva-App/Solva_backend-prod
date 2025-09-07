@@ -114,6 +114,25 @@ module.exports.uploadDocument = async function (req, res, next) {
   }
 };
 
+module.exports.deleteDocument = async function (req, res, next) {
+  try {
+    const document = await Document.findByPk(req.params.docId);
+    if (!document) {
+      return next(CustomError.badRequest("Document does not exist"));
+    }
+
+    await document.destroy();
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Document deleted successfully",
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
 module.exports.approveDocument = async function (req, res, next) {
   try {
     const document = await Document.findOne({
@@ -213,7 +232,6 @@ module.exports.getAllUploadedDocuments = async function (req, res, next) {
     return next({ error });
   }
 };
-
 
 module.exports.getUploadedDocuments = async function (req, res, next) {
   try {
