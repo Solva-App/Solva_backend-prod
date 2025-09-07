@@ -98,8 +98,10 @@ module.exports.getPastQuestions = async function (req, res, next) {
     });
 
     let questions = await Question.findAll({
-      where: { ...req.query },
-      uploadedToUser: true,
+      where: {
+        ...req.query,
+        uploadedToUser: true,
+      },
     });
 
     const questionsWithDocsPromises = questions.map(async (question) => {
