@@ -7,16 +7,8 @@ const grantSchema = {
         type: INTEGER,
         allowNull: false,
     },
-    name: {
-        type: TEXT,
-        allowNull: false,
-    },
     link: {
         type: STRING,
-    },
-    description: {
-        type: STRING,
-        allowNull: false,
     },
 }
 
