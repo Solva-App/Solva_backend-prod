@@ -259,7 +259,7 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
       return next(CustomError.notFound(`Previous ${document.model} does not exist`));
     }
 
-    const model = document.model === "project" ? await Project.create({ ...previousModel.dataValues, owner: req.user.id, requiresApproval: false, ...req.body }) : await Question.create({ ...previousModel.dataValues, owner: req.user.id, requiresApproval: false, ...req.body });
+    const model = document.model === "project" ? await Project.create({owner: req.user.id, requiresApproval: false, ...req.body }) : await Question.create({owner: req.user.id, requiresApproval: false, ...req.body });
 
     const updatedDocument = await Document.update(
       {
