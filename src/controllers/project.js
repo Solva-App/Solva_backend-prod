@@ -106,7 +106,8 @@ module.exports.getProjects = async function (req, res, next) {
         where: {
           model: "project",
           modelId: project.id,
-          status: "approved"
+          status: "approved",
+          uploadedToUser: true,
         }
       });
 

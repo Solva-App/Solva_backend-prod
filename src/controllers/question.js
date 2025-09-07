@@ -100,7 +100,6 @@ module.exports.getPastQuestions = async function (req, res, next) {
     let questions = await Question.findAll({
       where: {
         ...req.query,
-        uploadedToUser: true,
       },
     });
 
@@ -109,7 +108,8 @@ module.exports.getPastQuestions = async function (req, res, next) {
         where: {
           model: "question",
           modelId: question.id,
-          status: "approved"
+          status: "approved",
+          uploadedToUser: true,
         }
       });
 
