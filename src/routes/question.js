@@ -9,10 +9,11 @@ router.get('/', controllers.getPastQuestions)
 router.use(auth)
 
 router.use(isAdmin)
-router.post('/create', fileParser.array('documents', 10), controllers.createPastQuestion)
+// router.post('/create', fileParser.array('documents', 10), controllers.createPastQuestion)
 router.delete('/:id', controllers.deletePastQuestion)
 router.patch('/decline/:id', controllers.declinePastQuestion)
 router.patch('/approve/:id', controllers.approvePastQuestion)
 router.get("/admin/all", controllers.getAllPastQuestions);
+router.patch('/upload/:id', controllers.uploadPastQuestion)
 
 module.exports = router

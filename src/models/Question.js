@@ -31,6 +31,10 @@ const questionSchema = {
     type: BOOLEAN,
     defaultValue: true,
   },
+  uploadedToUser: {
+    type: BOOLEAN,
+    defaultValue: false,
+  }
 }
 
 const Question = sequelize.define('Question', questionSchema, {

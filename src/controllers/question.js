@@ -9,85 +9,85 @@ const Question = require("../models/Question");
 const { Op } = require("sequelize");
 const { sendNotification } = require("../services/notification");
 
-module.exports.createPastQuestion = async function (req, res, next) {
-  try {
-    const schema = new Schema({
-      title: { type: "string", required: true },
-      department: { type: "string", required: true },
-      university: { type: "string", required: true },
-      department: { type: "string", required: true },
-      courseCode: { type: "string", required: true },
-      faculty: { type: "string", required: true },
-      documents: { type: "array", required: true },
-    });
-    req.body.documents = [];
+// module.exports.createPastQuestion = async function (req, res, next) {
+//   try {
+//     const schema = new Schema({
+//       title: { type: "string", required: true },
+//       department: { type: "string", required: true },
+//       university: { type: "string", required: true },
+//       department: { type: "string", required: true },
+//       courseCode: { type: "string", required: true },
+//       faculty: { type: "string", required: true },
+//       documents: { type: "array", required: true },
+//     });
+//     req.body.documents = [];
 
-    let { user, body } = req;
-    let files = {
-      documents: [],
-    };
+//     let { user, body } = req;
+//     let files = {
+//       documents: [],
+//     };
 
-    for (let file of req.files) {
-      file = file;
-      files[file.fieldname].push(
-        await image.modifyStringImageFile(body[file.fieldname].length ? body[file.fieldname] : file)
-      );
-    }
+//     for (let file of req.files) {
+//       file = file;
+//       files[file.fieldname].push(
+//         await image.modifyStringImageFile(body[file.fieldname].length ? body[file.fieldname] : file)
+//       );
+//     }
 
-    const result = schema.validate({ ...body, ...files });
-    if (result.error) {
-      return next(CustomError.badRequest("Invalid request body", result.error));
-    }
+//     const result = schema.validate({ ...body, ...files });
+//     if (result.error) {
+//       return next(CustomError.badRequest("Invalid request body", result.error));
+//     }
 
-    // upload cert to firebase or aws bucket
-    for (const file of files.documents) {
-      const upload = await firebase.fileUpload(file, file.fieldname);
-      if (upload instanceof CustomError) {
-        return next(upload);
-      }
-      console.log(file.mimetype, file)
-      body[file.fieldname].push({
-        size: file.size,
-        url: upload,
-        mimetype: file.mimetype,
-        name: file.originalname
-      });
-    }
+//     // upload cert to firebase or aws bucket
+//     for (const file of files.documents) {
+//       const upload = await firebase.fileUpload(file, file.fieldname);
+//       if (upload instanceof CustomError) {
+//         return next(upload);
+//       }
+//       console.log(file.mimetype, file)
+//       body[file.fieldname].push({
+//         size: file.size,
+//         url: upload,
+//         mimetype: file.mimetype,
+//         name: file.originalname
+//       });
+//     }
 
-    const question = await Question.create({
-      ...body,
-      owner: req.user.id,
-    });
+//     const question = await Question.create({
+//       ...body,
+//       owner: req.user.id,
+//     });
 
-    const documents = await Document.bulkCreate(
-      body.documents.map((d) => {
-        return {
-          model: "question",
-          owner: req.user.id,
-          modelId: question.id,
-          url: d.url,
-          mimetype: d.mimetype,
-          name: d.name,
-          size: d.size,
-          status: "awaiting-approval",
-          requiresApproval: true,
-        };
-      })
-    );
+//     const documents = await Document.bulkCreate(
+//       body.documents.map((d) => {
+//         return {
+//           model: "question",
+//           owner: req.user.id,
+//           modelId: question.id,
+//           url: d.url,
+//           mimetype: d.mimetype,
+//           name: d.name,
+//           size: d.size,
+//           status: "awaiting-approval",
+//           requiresApproval: true,
+//         };
+//       })
+//     );
 
-    res.status(OK).json({
-      success: true,
-      status: res.statusCode,
-      message: "Question created successfully",
-      data: {
-        question,
-        documents,
-      },
-    });
-  } catch (error) {
-    return next({ error });
-  }
-};
+//     res.status(OK).json({
+//       success: true,
+//       status: res.statusCode,
+//       message: "Question created successfully",
+//       data: {
+//         question,
+//         documents,
+//       },
+//     });
+//   } catch (error) {
+//     return next({ error });
+//   }
+// };
 
 module.exports.getPastQuestions = async function (req, res, next) {
   try {
@@ -99,6 +99,7 @@ module.exports.getPastQuestions = async function (req, res, next) {
 
     let questions = await Question.findAll({
       where: { ...req.query },
+      uploadedToUser: true,
     });
 
     const questionsWithDocsPromises = questions.map(async (question) => {
@@ -193,13 +194,7 @@ module.exports.deletePastQuestion = async function (req, res, next) {
 module.exports.approvePastQuestion = async function (req, res, next) {
   try {
     const schema = new Schema({
-      title: { type: "string", required: true },
-      department: { type: "string", required: true },
-      university: { type: "string", required: true },
-      department: { type: "string", required: true },
-      courseCode: { type: "string", required: true },
-      faculty: { type: "string", required: true },
-      documents: { type: "array", required: false },
+      documents: { type: "array", required: true },
     });
     req.body.documents = [];
 
@@ -332,3 +327,44 @@ module.exports.getAllPastQuestions = async function (req, res, next) {
     return next({ error })
   }
 }
+
+module.exports.uploadPastQuestion = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      title: { type: "string", required: true },
+      department: { type: "string", required: true },
+      university: { type: "string", required: true },
+      department: { type: "string", required: true },
+      courseCode: { type: "string", required: true },
+      faculty: { type: "string", required: true },
+      documents: { type: "array", required: true },
+    });
+    req.body.documents = [];
+
+    let { body } = req;
+    let files = {
+      documents: [],
+    };
+
+    const result = schema.validate({ ...body, ...files });
+    if (result.error) {
+      return next(CustomError.badRequest("Invalid request body", result.error));
+    }
+
+    const question = await Question.findByPk(req.params.id);
+    if (!question) {
+      return next(CustomError.badRequest("Question does not exist"));
+    }
+
+    question.uploadedToUser = true;
+    await question.save();
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Question uploaded successfully",
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
