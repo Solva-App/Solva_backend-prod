@@ -246,3 +246,54 @@ module.exports.getUploadedDocuments = async function (req, res, next) {
     return next({ error });
   }
 };
+
+module.exports.sendDocumentToUser = async function (req, res, next) {
+  try {
+    const document = await Document.findByPk(req.params.docId);
+    if (!document) {
+      return next(CustomError.notFound("Document does not exist"));
+    }
+
+    const model =
+      document.model === "project"
+        ? await Project.create({
+            owner: req.user.id,
+            requiresApproval: true,
+            ...req.body,
+          })
+        : await Question.create({
+            owner: req.user.id,
+            requiresApproval: true,
+            ...req.body,
+          });
+
+    const updatedDocument = await Document.update(
+      {
+        modelId: model.id,
+        uploadedToUser: true,
+        requiresApproval: false,
+      },
+      {
+        where: {
+          id: req.params.docId,
+        },
+      }
+    );
+
+    if (updatedDocument[0] === 0) {
+      return next(CustomError.notFound("No document found with that id"));
+    }
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Document uploaded successfully",
+      data: {
+        document,
+        model,
+      },
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};

@@ -12,5 +12,6 @@ router.get('/:docId', controllers.getUploadedDocuments)
 router.patch('/approve/:docId', controllers.approveDocument)
 router.patch('/decline/:docId', controllers.declineDocument)
 router.delete('/:docId', controllers.deleteDocument)
+router.patch('/send/:docId', controllers.sendDocumentToUser)
 
 module.exports = router
