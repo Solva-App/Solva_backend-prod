@@ -6,7 +6,7 @@ const scholarshipSchema = {
     owner: {
         type: INTEGER,
         allowNull: false,
-    }
+    },
     link: {
         type: STRING,
     },
