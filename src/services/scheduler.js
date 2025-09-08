@@ -30,24 +30,40 @@ const initiateCharge = function (user) {
 }
 
 module.exports.initiateSubscriptionScheduler = async function (user) {
-    schedule.scheduleJob(user.chargeAuthCode, user.lastSubscriptionExpiresAt, initiateCharge(user))
+    if (user.chargeChannel !== 'card') {
+        schedule.scheduleJob(user.lastSubscriptionExpiresAt, async () => {
+            user.category = 'user'
+            await user.save()
+        })
+    } else {
+        schedule.scheduleJob(user.chargeAuthCode, user.lastSubscriptionExpiresAt, initiateCharge(user))
+    }
 }
 
 module.exports.initiateAllSubscriptionScheduler = async function () {
     const users = await User.findAll({
         where: {
             autoCharge: true,
-            chargeChannel: 'card',
         },
     })
 
     // initiate all user charge
-    users.forEach((user) => schedule.scheduleJob(user.chargeAuthCode, user.lastSubscriptionExpiresAt, initiateCharge(user)))
+    users.forEach((user) => {
+        if (user.chargeChannel !== 'card') {
+            schedule.scheduleJob(user.lastSubscriptionExpiresAt, async () => {
+                user.category = 'user'
+                await user.save()
+            })
+        } else {
+            schedule.scheduleJob(user.chargeAuthCode, user.lastSubscriptionExpiresAt, initiateCharge(user))
+        }
+    })
 }
 
 module.exports.stopAutoCharge = async function (user) {
     console.log('Auto Charge Disactivated Successfully')
     user.autoCharge = false
     await user.save()
-    return schedule.cancelJob(user.chargeAuthCode)
+    if (user.chargeChannel === 'card') return schedule.cancelJob(user.chargeAuthCode)
 }
+

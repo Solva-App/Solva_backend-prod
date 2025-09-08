@@ -32,8 +32,9 @@ event.on('charge.success', async function (_event, data, req, res, next) {
         // initiate crod when for next charge if chanel is don via card
         if (user.chargeChannel === 'card') {
             user.autoCharge = true
-            await initiateSubscriptionScheduler(user)
         }
+
+        await initiateSubscriptionScheduler(user)
 
         await user.save()
 
