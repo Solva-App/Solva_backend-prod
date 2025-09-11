@@ -33,7 +33,7 @@ module.exports.createInnovation = async function (req, res, next) {
 module.exports.getInnovations = async function (req, res, next) {
   try {
     if (req.user.category !== 'premium') {
-      return next(CustomError.forbidden('Only premium users can access this route'))
+      return next(CustomError.forbiddenRequest('Only premium users can access this route'))
     }
     const innovations = await Innovation.findAll()
     res.status(OK).json({
@@ -102,7 +102,7 @@ module.exports.deleteInnovation = async function (req, res, next) {
 module.exports.getInnovation = async function (req, res, next) {
   try {
     if (req.user.category !== 'premium') {
-      return next(CustomError.forbidden('Only premium users can access this route'))
+      return next(CustomError.forbiddenRequest('Only premium users can access this route'))
     }
     const innovation = await Innovation.findByPk(req.params.id)
     res.status(OK).json({

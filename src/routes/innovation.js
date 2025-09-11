@@ -2,10 +2,10 @@ const router = require('express').Router()
 const { isAdmin, auth } = require('../middlewares/auth')
 const controllers = require('../controllers/innovation')
 
+router.use(auth)
 router.get('/', controllers.getInnovations)
 router.get('/:id', controllers.getInnovation)
 
-router.use(auth)
 router.use(isAdmin)
 
 router.post('/create', controllers.createInnovation)
