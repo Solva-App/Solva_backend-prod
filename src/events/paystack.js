@@ -9,13 +9,12 @@ const event = new EventEmitter()
 
 event.on('charge.success', async function (_event, data, req, res, next) {
     try {
-        const monthsToAdd = data?.metadata?.type === 3;
         const date = new Date()
-        date.setMonth(date.getMonth() + monthsToAdd);
+        const expiryDate = new Date(date.setMonth(date.getMonth() + 3));
 
         const user = await User.findOne({ where: { email: data.customer.email } })
         user.chargeAuthCode = data.authorization.authorization_code
-        user.lastSubscriptionExpiresAt = date // set this to be the next 3 month
+        user.lastSubscriptionExpiresAt = expiryDate // set this to be the next 3 month
         user.lastSubscriptionPlan = data.metadata.type
         user.chargeChannel = data.channel.toLowerCase()
         user.category = 'premium'
