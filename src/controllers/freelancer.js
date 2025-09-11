@@ -16,6 +16,7 @@ module.exports.becomeFreelancer = async function (req, res, next) {
       startingAmount: { type: "string", required: true },
       portfolioLink: { type: "string", required: true },
       phoneNumber: { type: "string", required: true },
+      location: { type: "string", required: true },
       whatsappLink: { type: "string", required: true },
     });
 
@@ -130,6 +131,7 @@ module.exports.editFreelancerProfile = async function (req, res, next) {
       startingAmount: { type: "string", required: false },
       portfolioLink: { type: "string", required: false },
       phoneNumber: { type: "string", required: false },
+      location: { type: "string", required: false },
       whatsappLink: { type: "string", required: false },
       profilePic: {
         type: "object",
