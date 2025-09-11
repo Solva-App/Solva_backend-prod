@@ -32,8 +32,8 @@ module.exports.createScholarship = async function (req, res, next) {
 
 module.exports.getScholarships = async function (req, res, next) {
   try {
-    if (req.user.category !== 'premium') {
-      return next(CustomError.forbiddenRequest('Only premium users can access this route'))
+    if (!(req.user.category === 'admin' || req.user.category === 'premium')) {
+      return next(CustomError.forbiddenRequest('Only admin and premium users can access this route'))
     }
 
     const scholarships = await Scholarship.findAll()
@@ -103,8 +103,8 @@ module.exports.deleteScholarship = async function (req, res, next) {
 
 module.exports.getScholarship = async function (req, res, next) {
   try {
-    if (req.user.category !== 'premium') {
-      return next(CustomError.forbiddenRequest('Only premium users can access this route'))
+    if (!(req.user.category === 'admin' || req.user.category === 'premium')) {
+      return next(CustomError.forbiddenRequest('Only admin and premium users can access this route'))
     }
     const scholarship = await Scholarship.findByPk(req.params.id)
     if (!scholarship) {
