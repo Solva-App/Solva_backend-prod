@@ -33,6 +33,9 @@ module.exports.createGrant = async function (req, res, next) {
 
 module.exports.getGrants = async function (req, res, next) {
     try {
+        if (req.user.category !== 'premium') {
+            return next(CustomError.forbidden('Only premium users can access this route'))
+        }
         const grants = await Grant.findAll()
         res.status(OK).json({
             success: true,
@@ -99,6 +102,9 @@ module.exports.deleteGrant = async function (req, res, next) {
 
 module.exports.getGrant = async function (req, res, next) {
     try {
+      if (req.user.category !== 'premium') {
+            return next(CustomError.forbidden('Only premium users can access this route'))
+        }
         const grant = await Grant.findByPk(req.params.id)
         res.status(OK).json({
             success: true,

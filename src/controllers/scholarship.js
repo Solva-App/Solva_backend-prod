@@ -32,6 +32,10 @@ module.exports.createScholarship = async function (req, res, next) {
 
 module.exports.getScholarships = async function (req, res, next) {
   try {
+    if (req.user.category !== 'premium') {
+      return next(CustomError.forbidden('Only premium users can access this route'))
+    }
+
     const scholarships = await Scholarship.findAll()
 
     res.status(OK).json({
@@ -99,6 +103,9 @@ module.exports.deleteScholarship = async function (req, res, next) {
 
 module.exports.getScholarship = async function (req, res, next) {
   try {
+    if (req.user.category !== 'premium') {
+      return next(CustomError.forbidden('Only premium users can access this route'))
+    }
     const scholarship = await Scholarship.findByPk(req.params.id)
     if (!scholarship) {
       return next(CustomError.badRequest('Invalid scholarship id'))
