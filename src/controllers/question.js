@@ -227,7 +227,7 @@ module.exports.approvePastQuestion = async function (req, res, next) {
     }
 
     if (uploader.category === "premium") {
-      uploader.balance += 100;
+      uploader.balance += 200;
       await uploader.save();
     }
 

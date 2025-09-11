@@ -222,7 +222,7 @@ module.exports.approveProject = async function (req, res, next) {
     }
 
     if (uploader.category === "premium") {
-      uploader.balance += 100;
+      uploader.balance += 2500;
       await uploader.save();
     }
 
