@@ -398,10 +398,7 @@ module.exports.sendForgotPasswordOTP = async function (req, res, next) {
       attributes: ["id", "fullName"],
     });
 
-    if (!user)
-      return res
-        .status(200)
-        .json({ message: "An OTP has been sent to the email " + email });
+    if (!user) return next(CustomError.badRequest("NO user with that email exists"));
 
     // generate the otp
     let otp = otpGenerate.generate(4, {
