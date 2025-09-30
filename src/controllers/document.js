@@ -13,7 +13,11 @@ module.exports.uploadDocument = async function (req, res, next) {
   try {
     const schema = new Schema({
       documents: { type: "array", required: true },
-      dropdown: { type: "string", required: true },
+      dropdown: {
+        type: "string",
+        required: true,
+        enum: ["project", "question"],
+      },
     });
 
     req.body.documents = [];
@@ -87,19 +91,6 @@ module.exports.uploadDocument = async function (req, res, next) {
       title: "Uploads Received",
       message: "You will get a response within 3 days",
     });
-
-    // let data;
-    // if (body.dropdown === "project") {
-    //   data = {
-    //     project: await Project.findByPk(modelId),
-    //     documents,
-    //   };
-    // } else if (body.dropdown === "question") {
-    //   data = {
-    //     question: await Question.findByPk(modelId),
-    //     documents,
-    //   };
-    // }
 
     res.status(OK).json({
       success: true,
