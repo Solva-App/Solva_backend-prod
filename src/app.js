@@ -26,13 +26,22 @@ const io = new socket.Server(server,{
 });
 
 const corsOptions = {
-  origin: '*',
+  origin: (req, callback) => {
+    if (req.header('origin') !== null && allowedOrigins.includes(req.header('origin'))) {
+      callback(null, req.header('origin'));
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   preflightContinue: false,
   optionsSuccessStatus: 204,
   maxAge: 86400,
+  credentials: true,
 };
+
+const allowedOrigins = ['http://localhost:8081', 'https://solva-backend.onrender.com'];
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
