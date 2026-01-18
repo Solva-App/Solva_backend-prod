@@ -41,7 +41,7 @@ const corsOptions = {
   credentials: true,
 };
 
-const allowedOrigins = ['http://localhost:8081', 'https://solva-backend.onrender.com'];
+const allowedOrigins = ['http://localhost:8081'];
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
