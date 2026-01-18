@@ -18,30 +18,41 @@ const middlewares = require("./middlewares");
 
 const server = http.createServer(app);
 
-const io = new socket.Server(server,{
+const io = new socket.Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
   },
 });
 
+const allowedOrigins = [
+  'http://localhost:8081',
+];
+
 const corsOptions = {
-  origin: (req, callback) => {
-    if (req.header('origin') !== null && allowedOrigins.includes(req.header('origin'))) {
-      callback(null, req.header('origin'));
+  origin: function (origin, callback) {
+
+    // Allow requests with no origin (Postman, mobile apps, server calls)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('CORS not allowed'));
     }
   },
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-  maxAge: 86400,
-  credentials: true,
-};
 
-const allowedOrigins = ['http://localhost:8081'];
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'X-Requested-With',
+    'Origin'
+  ],
+  optionsSuccessStatus: 204
+};
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
