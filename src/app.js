@@ -17,18 +17,26 @@ const app = express();
 const middlewares = require("./middlewares");
 
 const server = http.createServer(app);
+
 const io = new socket.Server(server,{
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
   },
 });
+
 const corsOptions = {
-  origin: '*'
+  origin: '*',
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  maxAge: 86400,
 };
 
-
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(morgan("tiny"));
