@@ -25,37 +25,11 @@ const io = new socket.Server(server, {
   },
 });
 
-const allowedOrigins = [
-  'http://localhost:8081',
-];
-
 const corsOptions = {
-  origin: function (origin, callback) {
-
-    // Allow requests with no origin (Postman, mobile apps, server calls)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed'));
-    }
-  },
-
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Accept',
-    'X-Requested-With',
-    'Origin'
-  ],
-  optionsSuccessStatus: 204
+  origin: "*",
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
