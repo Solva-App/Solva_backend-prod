@@ -5,12 +5,12 @@ const http = require("http");
 const morgan = require("morgan");
 const path = require("path");
 const socket = require("socket.io");
-const { initiateAllSubscriptionScheduler } = require("./services/scheduler.js");// app.js or server.js
+const { initiateAllSubscriptionScheduler, scheduleDailyTaskUpdate } = require("./services/scheduler.js");// app.js or server.js
 const { initNotificationIO } = require("./services/notification");
 const { checkOrCreateAdmin } = require("./helpers/admin");
 
 // setup database connection
-require("./database/db.js").startDB([initiateAllSubscriptionScheduler]);
+require("./database/db.js").startDB([initiateAllSubscriptionScheduler, scheduleDailyTaskUpdate]);
 checkOrCreateAdmin();
 
 const app = express();

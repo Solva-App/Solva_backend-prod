@@ -4,6 +4,8 @@ const CustomError = require('../helpers/error')
 const User = require('../models/User')
 const { formatDate } = require('./../helpers/time')
 const Token = require('../models/Token')
+const Task = require('../models/Task')
+const { Op } = require('sequelize');
 
 const initiateCharge = function (user) {
     console.log(`Charge will be initiated ${formatDate(user.lastSubscriptionExpiresAt)}`, user.email)
@@ -67,3 +69,43 @@ module.exports.stopAutoCharge = async function (user) {
     if (user.chargeChannel === 'card') return schedule.cancelJob(user.chargeAuthCode)
 }
 
+module.exports.updateTaskStatuses = async function () {
+    try {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        const [activeUpdatedCount] = await Task.update(
+            { status: 'active' },
+            {
+                where: {
+                    startDate: { [Op.lte]: todayStr },
+                    endDate: { [Op.gte]: todayStr },
+                    status: { [Op.not]: 'active' } // Only update if status is not already active
+                }
+            }
+        );
+
+        const [endedUpdatedCount] = await Task.update(
+            { status: 'ended' },
+            {
+                where: {
+                    endDate: { [Op.lt]: todayStr },
+                    status: { [Op.not]: 'ended' } // Only update if status is not already ended
+                }
+            }
+        );
+
+        console.log(
+            `[${new Date().toISOString()}] Task status update completed. Active updated: ${activeUpdatedCount}, Ended updated: ${endedUpdatedCount}`
+        );
+    } catch (error) {
+        console.error('Error updating task statuses:', error);
+    }
+};
+
+module.exports.scheduleDailyTaskUpdate = function () {
+    schedule.scheduleJob('0 6 * * *', () => {
+        console.log('Running daily task status check...');
+        module.exports.updateTaskStatuses();
+    });
+};
