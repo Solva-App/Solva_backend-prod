@@ -95,8 +95,3 @@ app.use(middlewares.errorHandler);
 // error handler
 
 module.exports = { server };
-
-
-curl -i -X OPTIONS https://solva-backend-prod.onrender.com/api/v1/users/login ^
- -H "Origin: http://localhost:8081" ^
- -H "Access-Control-Request-Method: POST"
