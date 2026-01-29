@@ -5,12 +5,12 @@ const http = require("http");
 const morgan = require("morgan");
 const path = require("path");
 const socket = require("socket.io");
-const { initiateAllSubscriptionScheduler } = require("./services/scheduler.js");// app.js or server.js
+const { initiateAllSubscriptionScheduler, scheduleDailyTaskUpdate } = require("./services/scheduler.js");// app.js or server.js
 const { initNotificationIO } = require("./services/notification");
 const { checkOrCreateAdmin } = require("./helpers/admin");
 
 // setup database connection
-require("./database/db.js").startDB([initiateAllSubscriptionScheduler]);
+require("./database/db.js").startDB([initiateAllSubscriptionScheduler, scheduleDailyTaskUpdate]);
 checkOrCreateAdmin();
 
 const app = express();
@@ -53,7 +53,8 @@ const webhookRoutes = require("./routes/webhook");
 const sliderRoutes = require("./routes/slider");
 const notificationRoutes = require("./routes/notification");
 const chatRoutes = require("./routes/chat");
-const statsRoutes = require("./routes/stats")
+const statsRoutes = require("./routes/stats");
+const taskRoutes = require("./routes/task");
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -78,6 +79,7 @@ app.use("/api/v1/slider", sliderRoutes);
 app.use("/api/v1/notification", notificationRoutes);
 app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/stats", statsRoutes);
+app.use("/api/v1/tasks", taskRoutes);
 
 require("./helpers/socket")(io);
 initNotificationIO(io);
