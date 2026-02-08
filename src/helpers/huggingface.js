@@ -10,7 +10,7 @@ exports.generateResponse = async (prompt) => {
   try {
     const chatCompletion = await client.chatCompletion({
       provider: 'novita',
-      model: 'mistralai/Mistral-7B-Instruct-v0.3',
+      model: MODEL,
       messages: [
         { role: 'system', content: 'You are a helpful assistant.' },
         { role: 'user', content: prompt },
