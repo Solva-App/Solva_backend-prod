@@ -212,7 +212,7 @@ module.exports.addComment = async function (req, res, next) {
       return next(CustomError.badRequest("Invalid freelancer id"));
     }
 
-    if(req.user.id === freelancer.owner) {
+    if (req.user.id === freelancer.owner) {
       return next(CustomError.badRequest("Freelancer can't comment on their profile"))
     }
 
@@ -272,23 +272,38 @@ module.exports.getCatigories = async function (_req, res, next) {
         {
           id: 1,
           title: "Graphic Design",
-          description: "Logo & Brand Identity, Gaming",
+          description: "Logo & Brand Identity, Gaming, ui/ux, Social Media Design, Presentation Design, illustration, Flyers & Posters",
         },
         {
           id: 2,
           title: "Digital Marketing",
-          description: "Social Media, Marketing, SEO",
+          description: "Social Media Marketing, Local SEO, Video Marketing, Email Marketing, Social Media Advertising, Mobile App Marketing, Web Analytics",
         },
         {
           id: 3,
           title: "Programming & Tech",
-          description: "Website Development, Maintainance",
+          description: "Website development, WordPress, Mobile App Development, Web Application, Game Development, Chatbots, AI Application, QA & Testing, Cybersecurity",
         },
         {
           id: 4,
           title: "Video & Animation",
-          description: "Video Editing, Video Ads & Commercials",
+          description: "Video Editing, Short Video Ads, Social Media videos, Explainer Video's, Whiteboard Animation, Logo Animation, Visual Effects (VFX) ",
         },
+        {
+          id: 5,
+          title: "Photography",
+          description: "Product Photography, Lifestyle Photography, Portrait, Photography, Image Editing, Photo Retouching",
+        },
+        {
+          id: 6,
+          title: "Business",
+          description: "Business Plan, Market Research, Virtual  Assistant, Project Management, financial consulting, Legal Consulting, Hr Consulting, CRM Management",
+        },
+        {
+          id: 7,
+          title: "Others",
+          description: "Others",
+        }
       ],
     });
   } catch (error) {
