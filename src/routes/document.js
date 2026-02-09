@@ -11,6 +11,7 @@ router.get('/', controllers.getAllUploadedDocuments)
 router.get('/:docId', controllers.getUploadedDocuments)
 router.patch('/approve/:docId', controllers.approveDocument)
 router.patch('/decline/:docId', controllers.declineDocument)
+router.delete('/bulk', controllers.bulkDeleteDocuments)
 router.delete('/:docId', controllers.deleteDocument)
 router.patch('/send/:docId', controllers.sendDocumentToUser)
 

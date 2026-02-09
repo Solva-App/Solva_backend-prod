@@ -21,6 +21,17 @@ module.exports.fileUpload = async function (file, location) {
   }
 }
 
+// module.exports.deleteFile = async function (filePath) {
+//   try {
+//     const fileRef = storage.ref(bucket, filePath);
+//     await storage.deleteObject(fileRef);
+//     return true;
+//   } catch (error) {
+//     console.error("Firebase Delete Error:", error);
+//     return false;
+//   }
+// };
+
 // module.exports.sendNotification = async (token, { title, body, data }) => {
 //   try {
 //     const response = await messaging.sendToToken(token, {
