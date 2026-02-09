@@ -65,19 +65,25 @@ const taskSchema = {
   },
   status: {
     type: DataTypes.ENUM('upcoming', 'active', 'ended'),
-    defaultValue: function () {
-      const now = new Date();
-      const startDate = this.startDate;
-      if (startDate && startDate > now) return 'upcoming';
-      return 'active';
-    },
   }
 }
 
 const Task = sequelize.define('Task', taskSchema, {
   timestamps: true,
   hooks: {
-    beforeValidate(_pl) { },
+    beforeValidate: (task) => {
+      const now = new Date();
+      if (task.startDate) {
+        const start = new Date(task.startDate);
+        if (start > now) {
+          task.status = 'upcoming';
+        } else if (task.endDate && new Date(task.endDate) < now) {
+          task.status = 'ended';
+        } else {
+          task.status = 'active';
+        }
+      }
+    },
     beforeUpdate(_pl) { },
     afterFind(_pl) { },
   },
