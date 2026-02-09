@@ -187,6 +187,40 @@ module.exports.deleteProject = async function (req, res, next) {
   }
 }
 
+module.exports.bulkDeleteProjects = async function (req, res, next) {
+  try {
+    const { projectIds } = req.body;
+
+    if (!projectIds || !Array.isArray(projectIds) || projectIds.length === 0) {
+      return next(CustomError.badRequest("No project IDs provided"));
+    }
+
+    const project = await Project.findAll({
+      where: { id: projectIds }
+    });
+
+    if (project.length === 0) {
+      return next(CustomError.badRequest("No matching project found"));
+    }
+
+    await Document.destroy({
+      where: { model: "project", modelId: projectIds }
+    })
+
+    await Project.destroy({
+      where: { id: projectIds }
+    })
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Projects and their documents deleted successfully",
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
 module.exports.approveProject = async function (req, res, next) {
   try {
     const project = await Project.findByPk(req.params.id)
@@ -318,6 +352,7 @@ module.exports.getAllProjects = async function (req, res, next) {
 
 
 module.exports.uploadProjects = async function (req, res, next) {
+  Project
   try {
     const schema = new Schema({
       name: { type: 'string', required: true },

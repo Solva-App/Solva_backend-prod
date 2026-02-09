@@ -193,6 +193,40 @@ module.exports.deletePastQuestion = async function (req, res, next) {
   }
 };
 
+module.exports.bulkDeletePastQuestions = async function (req, res, next) {
+  try {
+    const { questionIds } = req.body;
+
+    if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
+      return next(CustomError.badRequest("No question IDs provided"));
+    }
+
+    const questions = await Question.findAll({
+      where: { id: questionIds }
+    });
+
+    if (questions.length === 0) {
+      return next(CustomError.badRequest("No matching questions found"));
+    }
+
+    await Document.destroy({
+      where: { model: "question", modelId: questionIds }
+    })
+
+    await Question.destroy({
+      where: { id: questionIds }
+    })
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Questions and their documents deleted successfully",
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
+
 module.exports.approvePastQuestion = async function (req, res, next) {
   try {
     const question = await Question.findByPk(req.params.id);
