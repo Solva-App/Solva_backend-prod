@@ -41,6 +41,17 @@ module.exports.createSubmission = async function (req, res, next) {
       return next(CustomError.badRequest('End date for this task has passed'))
     }
 
+    const hasSubmitted = await Submission.findOne({
+      where: {
+        taskId: req.params.taskId,
+        userId: req.user.id
+      }
+    })
+
+    if (hasSubmitted) {
+      return next(CustomError.badRequest('You have already submitted for this task'))
+    }
+
     const body = req.body
 
     const submission = await Submission.create({
