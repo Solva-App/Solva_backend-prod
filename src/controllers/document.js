@@ -250,7 +250,7 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
       return next(CustomError.notFound(`Previous ${document.model} does not exist`));
     }
 
-    const model = document.model === "project" ? await Project.create({owner: req.user.id, requiresApproval: false, ...req.body }) : await Question.create({owner: req.user.id, requiresApproval: false, ...req.body });
+    const model = document.model === "project" ? await Project.create({ owner: req.user.id, requiresApproval: false, ...req.body }) : await Question.create({ owner: req.user.id, requiresApproval: false, ...req.body });
 
     const updatedDocument = await Document.update(
       {
@@ -294,3 +294,31 @@ module.exports.sendDocumentToUser = async function (req, res, next) {
   }
 };
 
+module.exports.bulkDeleteDocuments = async function (req, res, next) {
+  try {
+    const { docIds } = req.body;
+
+    if (!docIds || !Array.isArray(docIds) || docIds.length === 0) {
+      return next(CustomError.badRequest("No document IDs provided"));
+    }
+
+    const documents = await Document.findAll({
+      where: { id: docIds }
+    });
+
+    if (documents.length === 0) {
+      return next(CustomError.badRequest("No matching documents found"));
+    }
+
+    await Document.destroy({
+      where: { id: docIds }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${documents.length} documents and their files deleted successfully`,
+    });
+  } catch (error) {
+    return next({ error });
+  }
+};
