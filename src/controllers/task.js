@@ -30,6 +30,7 @@ module.exports.createTask = async function (req, res, next) {
     }
 
     const body = req.body
+    console.log(body)
 
     if (new Date(body.startDate) >= new Date(body.endDate)) {
       return next(
