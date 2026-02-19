@@ -101,7 +101,7 @@ module.exports.createQuiz = async function (req, res, next) {
 module.exports.getAllQuizzes = async function (req, res, next) {
   try {
     const quizzes = await Quiz.findAll({
-      where: { owner: user.req.id }
+      where: { owner: req.user.id }
     });
     res.status(200).json({ success: true, data: quizzes });
   } catch (error) {
@@ -148,9 +148,35 @@ module.exports.getQuizById = async function (req, res, next) {
 
 module.exports.deleteQuiz = async function (req, res, next) {
   try {
-    await Quiz.destroy({ where: { id: req.params.id } });
-    res.status(200).json({ success: true, message: "Quiz deleted" });
+    const quizId = req.params.id;
+
+    const quiz = await Quiz.findByPk(quizId);
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: "Quiz not found" });
+    }
+
+    const questions = await QuizQuestion.findAll({
+      where: { quizId: quizId }
+    });
+    const questionIds = questions.map(q => q.id);
+
+    if (questionIds.length > 0) {
+      await QuizOption.destroy({
+        where: { questionId: questionIds }
+      });
+    }
+
+    await QuizQuestion.destroy({
+      where: { quizId: quizId }
+    });
+
+    await Quiz.destroy({
+      where: { id: quizId }
+    });
+
+    res.status(200).json({ success: true, message: "Quiz, questions, and options deleted successfully" });
   } catch (error) {
+    console.error("Delete Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
