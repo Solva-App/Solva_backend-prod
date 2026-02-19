@@ -62,6 +62,7 @@ module.exports.createQuiz = async function (req, res, next) {
     }
 
     const savedQuiz = await Quiz.create({
+      owner: req.user.id,
       topic: quizData.topic,
       difficulty: quizData.difficulty
     });
@@ -99,7 +100,9 @@ module.exports.createQuiz = async function (req, res, next) {
 
 module.exports.getAllQuizzes = async function (req, res, next) {
   try {
-    const quizzes = await Quiz.findAll();
+    const quizzes = await Quiz.findAll({
+      where: { owner: user.req.id }
+    });
     res.status(200).json({ success: true, data: quizzes });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

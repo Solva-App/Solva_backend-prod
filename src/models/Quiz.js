@@ -1,8 +1,12 @@
 const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
-const { STRING, ENUM } = DataTypes
+const { STRING, ENUM, INTEGER } = DataTypes
 
 const quizSchema = {
+  owner: {
+    type: INTEGER,
+    allowNull: true,
+  },
   topic: {
     type: STRING,
     allowNull: true,
