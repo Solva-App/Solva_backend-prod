@@ -146,3 +146,112 @@ exports.generateQuizFromDocument = async (documentText, difficulty) => {
     return { error: "Generation failed." };
   }
 };
+
+exports.generateFlashcardsFromTopic = async (topic, difficulty, type) => {
+  try {
+    const chatCompletion = await client.chatCompletion({
+      provider: 'novita',
+      model: MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a Flashcard Generation Engine.
+          Output ONLY valid JSON. No conversational text. No markdown backticks.
+          
+          STYLE RULES:
+          - If type is 'true/false': The 'front' must be a factual statement, and the 'back' must be exactly 'True' or 'False' followed by a short explanation.
+          - If type is 'open-ended': The 'front' must be a question or term, and the 'back' must be the detailed answer.`
+        },
+        {
+          role: 'user',
+          content: `Generate a ${difficulty} difficulty ${type} flashcard deck about "${topic}".
+          
+          Use this exact structure:
+          {
+            "topic": "${topic}",
+            "difficulty": "${difficulty}",
+            "type": "${type}",
+            "cards": [
+              {
+                "front": "Statement or Question",
+                "back": "True/False explanation or Answer"
+              }
+            ]
+          }`
+        },
+      ],
+      temperature: 0.5,
+      max_tokens: 4000,
+    });
+
+    const rawContent = chatCompletion.choices?.[0]?.message?.content || "";
+    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    const cleanJson = jsonMatch ? jsonMatch[0] : rawContent.replace(/```json|```/g, "").trim();
+
+    try {
+      return JSON.parse(cleanJson);
+    } catch (parseError) {
+      console.error('[JSON Parse Error]', parseError.message);
+      return { error: "AI returned invalid format." };
+    }
+  } catch (error) {
+    console.error('[AI Service Error]', error.message);
+    return { error: "Failed to generate flashcards." };
+  }
+};
+
+exports.generateFlashcardsFromDocument = async (documentText, difficulty, type) => {
+  try {
+    const chatCompletion = await client.chatCompletion({
+      provider: 'novita',
+      model: MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a Document Analysis Engine. 
+          Extract key concepts from the text and convert them into ${type} flashcards.
+          
+          RULES:
+          1. Use ONLY the provided text.
+          2. If type is 'true/false': Create statements based on the text where the answer is True or False.
+          3. If type is 'open-ended': Create questions and answers based on the text.
+          4. Output EXCLUSIVELY valid JSON.`
+        },
+        {
+          role: 'user',
+          content: `TEXT TO ANALYZE:
+          "${documentText}"
+
+          GENERATE A ${difficulty.toUpperCase()} ${type.toUpperCase()} FLASHCARD DECK IN THIS JSON FORMAT:
+          {
+            "topic": "Extracted Subject",
+            "difficulty": "${difficulty}",
+            "type": "${type}",
+            "cards": [
+              {
+                "front": "Content based on ${type} style",
+                "back": "Answer based on ${type} style"
+              }
+            ]
+          }`
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 4000,
+    });
+
+    const rawContent = chatCompletion.choices?.[0]?.message?.content || "";
+    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    const cleanJson = jsonMatch ? jsonMatch[0] : rawContent.replace(/```json|```/g, "").trim();
+
+    try {
+      return JSON.parse(cleanJson);
+    } catch (parseError) {
+      console.error('[JSON Parse Error]', parseError.message);
+      return { error: "AI failed to parse document into flashcards." };
+    }
+  } catch (error) {
+    console.error('[AI Error]', error.message);
+    return { error: "Generation failed." };
+  }
+};
