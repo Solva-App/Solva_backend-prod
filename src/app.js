@@ -58,6 +58,7 @@ const taskRoutes = require("./routes/task");
 const submissionRoutes = require("./routes/submission");
 const quizRoutes = require("./routes/quiz");
 const flashcardRoutes = require("./routes/flashcard");
+const lessonRoutes = require("./routes/lesson");
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -86,6 +87,7 @@ app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1/submissions", submissionRoutes);
 app.use("/api/v1/quiz", quizRoutes);
 app.use("/api/v1/flashcard", flashcardRoutes);
+app.use("/api/v1/lesson", lessonRoutes);
 
 require("./helpers/socket")(io);
 initNotificationIO(io);

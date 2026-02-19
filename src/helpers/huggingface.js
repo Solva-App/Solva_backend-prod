@@ -255,3 +255,82 @@ exports.generateFlashcardsFromDocument = async (documentText, difficulty, type) 
     return { error: "Generation failed." };
   }
 };
+
+exports.generateLessonFromTopic = async (topic, difficulty, type) => {
+  const chatCompletion = await client.chatCompletion({
+    provider: 'novita',
+    model: MODEL,
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert Educator. Create a ${type} lesson.
+        Format as JSON only. A standard lesson has 3-4 sections.
+        A deep dive has 6-8 comprehensive sections.`
+      },
+      {
+        role: 'user',
+        content: `Topic: ${topic}. Difficulty: ${difficulty}.
+        Return JSON structure:
+        {
+          "topic": "${topic}",
+          "sections": [
+            { "heading": "Introduction", "content": "..." },
+            { "heading": "Core Concepts", "content": "..." }
+          ]
+        }`
+      }
+    ],
+    temperature: 0.6 // Slightly higher for better writing flow
+  });
+
+  const raw = chatCompletion.choices?.[0]?.message?.content || "";
+  return JSON.parse(raw.match(/\{[\s\S]*\}/)[0]);
+};
+
+exports.generateLessonFromDocument = async (documentText, difficulty, type) => {
+  try {
+    const chatCompletion = await client.chatCompletion({
+      provider: 'novita',
+      model: MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a Document Analysis Expert.
+          Your goal is to transform the provided text into a structured educational lesson.
+
+          STYLE RULES:
+          - Standard: 3-5 sections covering the main points.
+          - Deep Dive: 7-10 detailed sections covering every nuance in the text.
+          - Each section MUST have a 'heading' and 'content'.`
+        },
+        {
+          role: 'user',
+          content: `TEXT TO ANALYZE:
+          "${documentText}"
+
+          GENERATE A ${difficulty.toUpperCase()} ${type.toUpperCase()} LESSON IN THIS JSON FORMAT:
+          {
+            "topic": "Summarized Title of the Document",
+            "sections": [
+              {
+                "heading": "Section Heading",
+                "content": "Detailed explanatory text extracted from the document"
+              }
+            ]
+          }`
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 5000,
+    });
+
+    const rawContent = chatCompletion.choices?.[0]?.message?.content || "";
+    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    const cleanJson = jsonMatch ? jsonMatch[0] : rawContent.replace(/```json|```/g, "").trim();
+
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.error('[AI Document Lesson Error]', error.message);
+    return { error: "Failed to analyze document." };
+  }
+};
