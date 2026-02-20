@@ -12,12 +12,12 @@ const lessonSchema = {
     allowNull: true,
   },
   difficulty: {
-    type: ENUM('easy', 'medium', 'hard'),
-    defaultValue: 'medium'
+    type: ENUM('easy', 'intermediate', 'advanced'),
+    defaultValue: 'easy'
   },
   type: {
     type: ENUM('deep-dive', 'standard'),
-    defaultValue: 'deep-dive'
+    defaultValue: 'standard'
   }
 }
 
