@@ -22,28 +22,23 @@ module.exports.createSubmission = async function (req, res, next) {
       )
     }
 
-    const task = await Task.findOne({
-      where: {
-        id: req.body.taskId
-      },
-    })
+    const task = await Task.findByPk(req.body.taskId)
 
     if (!task) {
       return next(CustomError.badRequest('Task with that id does not exist'))
     }
 
-    if (task.usedSpots == task.totalSpots) {
+    if (task.usedSpots >= task.totalSpots) {
       return next(CustomError.badRequest('The spots for the task has been filled'))
     }
 
     if (task.endDate < new Date()) {
-      console.log(new Date())
       return next(CustomError.badRequest('End date for this task has passed'))
     }
 
     const hasSubmitted = await Submission.findOne({
       where: {
-        taskId: req.params.taskId,
+        taskId: req.body.taskId,
         userId: req.user.id
       }
     })
@@ -52,12 +47,10 @@ module.exports.createSubmission = async function (req, res, next) {
       return next(CustomError.badRequest('You have already submitted for this task'))
     }
 
-    const body = req.body
-
     const submission = await Submission.create({
-      taskId: body.taskId,
+      taskId: req.body.taskId,
       userId: req.user.id,
-      link: body.link,
+      link: req.body.link,
     })
 
     res.status(OK).json({
