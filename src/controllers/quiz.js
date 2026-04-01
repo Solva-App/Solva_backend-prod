@@ -1,7 +1,7 @@
 const CustomError = require('../helpers/error')
 const { Schema } = require('json-validace')
 const { OK } = require('http-status-codes')
-const { generateQuizFromTopic, generateQuizFromDocument } = require('../helpers/huggingface');
+const { generateQuizFromTopic, generateQuizFromDocument } = require('../helpers/openai');
 const Quiz = require('../models/Quiz')
 const QuizQuestion = require('../models/QuizQuestion')
 const QuizOption = require('../models/QuizOption')

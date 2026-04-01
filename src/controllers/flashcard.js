@@ -1,7 +1,7 @@
 const { sequelize } = require('../database/db');
 const Flashcard = require('../models/Flashcard');
 const Card = require('../models/Card');
-const { generateFlashcardsFromTopic, generateFlashcardsFromDocument } = require('../helpers/huggingface');
+const { generateFlashcardsFromTopic, generateFlashcardsFromDocument } = require('../helpers/openai');
 const extractText = require('../helpers/file');
 
 module.exports.createFlashcard = async function (req, res, next) {

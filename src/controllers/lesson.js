@@ -1,7 +1,7 @@
 const { sequelize } = require('../database/db');
 const Lesson = require('../models/Lesson');
 const Section = require('../models/Section');
-const { generateLessonFromTopic, generateLessonFromDocument } = require('../helpers/huggingface');
+const { generateLessonFromTopic, generateLessonFromDocument } = require('../helpers/openai');
 const extractText = require('../helpers/file');
 
 module.exports.createLesson = async function (req, res, next) {
