@@ -22,47 +22,49 @@ module.exports.createSubmission = async function (req, res, next) {
       )
     }
 
-    const task = await Task.findByPk(req.body.taskId)
+    const { taskId, link } = req.body
+    const userId = req.user.id
+
+    const task = await Task.findByPk(taskId)
 
     if (!task) {
       return next(CustomError.badRequest('Task with that id does not exist'))
-    }
-
-    if (task.usedSpots >= task.totalSpots) {
-      return next(CustomError.badRequest('The spots for the task has been filled'))
     }
 
     if (task.endDate < new Date()) {
       return next(CustomError.badRequest('End date for this task has passed'))
     }
 
-    const hasSubmitted = await Submission.findOne({
-      where: {
-        taskId: req.body.taskId,
-        userId: req.user.id
-      }
-    })
+    const previousSubmission = await Submission.findOne({
+      where: { taskId, userId }
+    });
 
-    if (hasSubmitted) {
-      return next(CustomError.badRequest('You have already submitted for this task'))
+    if (!previousSubmission) {
+      if (task.usedSpots >= task.totalSpots) {
+        return next(CustomError.badRequest('The spots for the task have been filled'));
+      }
+      await task.increment('usedSpots', { by: 1 });
     }
 
     const submission = await Submission.create({
-      taskId: req.body.taskId,
-      userId: req.user.id,
-      link: req.body.link,
-    })
+      taskId,
+      userId,
+      link,
+    });
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Submission created successfully',
+      message: previousSubmission
+        ? 'Additional link submitted successfully'
+        : 'Submission created successfully',
       data: submission,
-    })
+    });
+
   } catch (error) {
-    return next({ error })
+    return next({ error });
   }
-}
+};
 
 module.exports.getTaskSubmissions = async function (req, res, next) {
   try {
@@ -108,10 +110,6 @@ module.exports.approveSubmission = async function (req, res, next) {
     if (!task) {
       return next(CustomError.badRequest('No task found with this submission'))
     }
-
-    const earnings = (task.totalPool / task.totalSpots)
-    user.balance += earnings
-    await user.save()
 
     submission.status = "approved";
     await submission.save();
