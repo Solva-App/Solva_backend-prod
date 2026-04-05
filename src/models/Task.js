@@ -65,6 +65,10 @@ const taskSchema = {
   },
   status: {
     type: DataTypes.ENUM('upcoming', 'active', 'ended'),
+  },
+  payoutDistributed: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   }
 }
 

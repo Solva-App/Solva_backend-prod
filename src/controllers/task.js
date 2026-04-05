@@ -1,7 +1,10 @@
+const { sequelize } = require('../database/db')
 const { Schema } = require('json-validace')
 const { OK } = require('http-status-codes')
 const CustomError = require('../helpers/error')
+const User = require('../models/User')
 const Task = require('../models/Task')
+const Submission = require('../models/Submission')
 const firebase = require("./../helpers/firebase")
 
 module.exports.createTask = async function (req, res, next) {
@@ -87,10 +90,6 @@ module.exports.createTask = async function (req, res, next) {
 
 module.exports.getTasks = async function (req, res, next) {
   try {
-    // if (!(req.user.category === 'admin' || req.user.category === 'premium')) {
-    //   return next(CustomError.forbiddenRequest('Only admin and premium users can access this route'))
-    // }
-
     const tasks = await Task.findAll()
 
     res.status(OK).json({
@@ -230,3 +229,107 @@ module.exports.getTask = async function (req, res, next) {
     return next({ error })
   }
 }
+
+module.exports.checkTaskReviewStatus = async function (req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const submissionsCount = await Submission.count({
+      where: {
+        taskId: id
+      }
+    });
+
+    if (submissionsCount === 0) {
+      return next(CustomError.badRequest('No submissions found for this task'));
+    }
+
+    const pendingSubmission = await Submission.findOne({
+      where: {
+        taskId: id,
+        status: 'pending'
+      }
+    });
+
+    if (pendingSubmission) {
+      return res.status(OK).json({
+        success: true,
+        isComplete: false,
+        message: 'There are still pending submissions for this task.'
+      });
+    }
+
+    res.status(OK).json({
+      success: true,
+      isComplete: true,
+      message: 'All submissions have been processed.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports.processTaskPayout = async function (req, res, next) {
+  const t = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+
+    const task = await Task.findOne({
+      where: {
+        id: id,
+        status: 'ended'
+      }
+    });
+    if (!task) return next(CustomError.badRequest('Task not found or has not ended yet'));
+
+    if (task.payoutDistributed) {
+      return next(CustomError.badRequest('Payout has already been distributed for this task'));
+    }
+
+    const pendingCount = await Submission.count({ where: { taskId: id, status: 'pending' } });
+    if (pendingCount > 0) {
+      return next(CustomError.badRequest('All submissions must be Approved or Rejected before payout'));
+    }
+
+    const approvedSubmissions = await Submission.findAll({
+      where: { taskId: id, status: 'approved' },
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('userId')), 'userId']],
+      raw: true
+    });
+
+    const uniqueUserCount = approvedSubmissions.length;
+
+    if (uniqueUserCount === 0) {
+      await task.update({ payoutDistributed: true }, { t });
+      await t.commit();
+      return res.status(OK).json({ success: true, message: 'No approved users. No funds distributed.' });
+    }
+
+    const payoutPerUser = task.totalPool / uniqueUserCount;
+
+    const userIds = approvedSubmissions.map(s => s.userId);
+
+    await User.update(
+      { balance: sequelize.literal(`balance + ${payoutPerUser}`) },
+      {
+        where: { id: userIds },
+        t
+      }
+    );
+
+    await task.update({
+      payoutDistributed: true,
+    }, { t });
+
+    await t.commit();
+
+    res.status(OK).json({
+      success: true,
+      message: `Distributed ${task.totalPool} among ${uniqueUserCount} users (${payoutPerUser.toFixed(2)} each).`
+    });
+
+  } catch (error) {
+    if (t) await t.rollback();
+    next(error);
+  }
+};
