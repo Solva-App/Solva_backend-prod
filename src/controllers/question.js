@@ -8,6 +8,10 @@ const { OK } = require("http-status-codes");
 const Question = require("../models/Question");
 const { Op } = require("sequelize");
 const { sendNotification } = require("../services/notification");
+const { sendEmail } = require("../helpers/resend");
+const fs = require("fs");
+const path = require("path");
+const handlebars = require("handlebars");
 
 // module.exports.createPastQuestion = async function (req, res, next) {
 //   try {
@@ -265,11 +269,36 @@ module.exports.approvePastQuestion = async function (req, res, next) {
       await uploader.save();
     }
 
-    await sendNotification({
-      target: [question.owner],
-      title: "Question Approved",
-      message: "Your question has been approved",
+    // await sendNotification({
+    //   target: [question.owner],
+    //   title: "Question Approved",
+    //   message: "Your question has been approved",
+    // });
+
+    const user = await User.findByPk(question.owner, {
+      attributes: ["email", "fullName"],
     });
+
+    if (!user) {
+      return next(CustomError.notFound("User not found for this question."));
+    }
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: user.fullName,
+      email: user.email,
+      message: "Your question has been approved.",
+    });
+
+    await sendEmail(user.email, "Question Approved", template);
 
     res.status(OK).json({
       success: true,

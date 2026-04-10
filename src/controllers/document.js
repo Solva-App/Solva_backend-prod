@@ -8,6 +8,10 @@ const User = require("../models/User");
 const Project = require("../models/Project");
 const Question = require("../models/Question");
 const { sendNotification } = require("../services/notification");
+const { sendEmail } = require("../helpers/resend");
+const fs = require("fs");
+const path = require("path");
+const handlebars = require("handlebars");
 
 module.exports.uploadDocument = async function (req, res, next) {
   try {
@@ -86,11 +90,28 @@ module.exports.uploadDocument = async function (req, res, next) {
       })
     );
 
-    await sendNotification({
-      target: [req.user.id],
-      title: "Uploads Received",
-      message: "You will get a response within 3 days",
+    // await sendNotification({
+    //   target: [req.user.id],
+    //   title: "Uploads Received",
+    //   message: "You will get a response within 3 days",
+    // });
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: req.user.fullName,
+      email: req.user.email,
+      message: "You will get a response within 3 days.",
     });
+
+    await sendEmail(req.user.email, "Uploads Received", template);
 
     res.status(OK).json({
       success: true,
@@ -154,11 +175,36 @@ module.exports.approveDocument = async function (req, res, next) {
     document.requiresApproval = false;
     await document.save();
 
-    await sendNotification({
-      target: [document.owner],
-      title: "Question Approved",
-      message: "Your question has been approved",
+    // await sendNotification({
+    //   target: [document.owner],
+    //   title: "Question Approved",
+    //   message: "Your question has been approved",
+    // });
+
+    const user = await User.findByPk(document.owner, {
+      attributes: ["email", "fullName"],
     });
+
+    if (!user) {
+      return next(CustomError.notFound("User not found for this document."));
+    }
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: user.fullName,
+      email: user.email,
+      message: "Your document has been approved.",
+    });
+
+    await sendEmail(user.email, "Document Approved", template);
 
     res.status(OK).json({
       success: true,
@@ -192,11 +238,36 @@ module.exports.declineDocument = async function (req, res, next) {
     uploader.balance += 100;
     await uploader.save();
 
-    await sendNotification({
-      target: [document.owner],
-      title: "Document Declined",
-      message: "Your document has been declined",
+    // await sendNotification({
+    //   target: [document.owner],
+    //   title: "Document Declined",
+    //   message: "Your document has been declined",
+    // });
+
+    const user = await User.findByPk(document.owner, {
+      attributes: ["email", "fullName"],
     });
+
+    if (!user) {
+      return next(CustomError.notFound("User not found for this document."));
+    }
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: user.fullName,
+      email: user.email,
+      message: "Your document has been declined.",
+    });
+
+    await sendEmail(user.email, "Document Declined", template);
 
     res.status(OK).json({
       success: true,

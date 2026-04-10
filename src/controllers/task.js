@@ -6,6 +6,10 @@ const User = require('../models/User')
 const Task = require('../models/Task')
 const Submission = require('../models/Submission')
 const firebase = require("./../helpers/firebase")
+const { sendEmail } = require("../helpers/resend");
+const fs = require("fs");
+const path = require("path");
+const handlebars = require("handlebars");
 
 module.exports.createTask = async function (req, res, next) {
   try {
@@ -322,6 +326,26 @@ module.exports.processTaskPayout = async function (req, res, next) {
     }, { t });
 
     await t.commit();
+
+    const templatePath = path.join(__dirname, "../templates/default_email.handlebars");
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const users = await User.findAll({
+      where: { id: userIds },
+      attributes: ['id', 'email', 'fullName']
+    });
+
+    const emailPromises = users.map(user => {
+      const htmlContent = compileTemplate({
+        fullName: user.fullName,
+        email: user.email,
+        message: `You have received a payout of ${payoutPerUser.toFixed(2)} for task "${task.title}". Your balance has been updated.`
+      });
+      return sendEmail(user.email, "Task Payout Received", htmlContent);
+    });
+
+    await Promise.all(emailPromises);
 
     res.status(OK).json({
       success: true,

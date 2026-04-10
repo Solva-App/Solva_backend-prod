@@ -8,6 +8,10 @@ const User = require('../models/User')
 const { OK } = require('http-status-codes')
 const { Op } = require('sequelize')
 const { sendNotification } = require("../services/notification");
+const { sendEmail } = require("../helpers/resend");
+const fs = require("fs");
+const path = require("path");
+const handlebars = require("handlebars");
 
 // create
 // module.exports.createProject = async function (req, res, next) {
@@ -260,11 +264,36 @@ module.exports.approveProject = async function (req, res, next) {
       await uploader.save();
     }
 
-    await sendNotification({
-      target: [project.owner],
-      title: "Project Approved",
-      message: "Your project has been approved",
+    // await sendNotification({
+    //   target: [project.owner],
+    //   title: "Project Approved",
+    //   message: "Your project has been approved",
+    // });
+
+    const user = await User.findByPk(project.owner, {
+      attributes: ["email", "fullName"],
     });
+
+    if (!user) {
+      return next(CustomError.notFound("User not found for this project."));
+    }
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: user.fullName,
+      email: user.email,
+      message: "Your project has been approved.",
+    });
+
+    await sendEmail(user.email, "Project Approved", template);
 
     res.status(OK).json({
       success: true,

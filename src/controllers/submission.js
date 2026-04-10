@@ -6,6 +6,10 @@ const Task = require('../models/Task')
 const User = require("../models/User")
 const firebase = require("./../helpers/firebase")
 const { sendNotification } = require("../services/notification");
+const { sendEmail } = require("../helpers/resend");
+const fs = require("fs");
+const path = require("path");
+const handlebars = require("handlebars");
 
 module.exports.createSubmission = async function (req, res, next) {
   try {
@@ -114,11 +118,28 @@ module.exports.approveSubmission = async function (req, res, next) {
     submission.status = "approved";
     await submission.save();
 
-    await sendNotification({
-      target: [submission.userId],
-      title: "Task Submission",
+    // await sendNotification({
+    //   target: [submission.userId],
+    //   title: "Task Submission",
+    //   message: "Your task submission has been approved",
+    // });
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: user.fullName,
+      email: user.email,
       message: "Your task submission has been approved",
     });
+
+    await sendEmail(user.email, "Task Submission", template);
 
     res.status(OK).json({
       success: true,
@@ -144,14 +165,45 @@ module.exports.rejectSubmission = async function (req, res, next) {
       return next(CustomError.badRequest('Submission with that id does not exist or has already been approved or rejected'))
     }
 
+    const user = await User.findByPk(submission.userId)
+    if (!user) {
+      return next(CustomError.badRequest('No user found with this submission'))
+    }
+
+    const task = await Task.findOne({
+      where: {
+        id: submission.taskId
+      }
+    })
+    if (!task) {
+      return next(CustomError.badRequest('No task found with this submission'))
+    }
+
     submission.status = "rejected";
     await submission.save();
 
-    await sendNotification({
-      target: [submission.userId],
-      title: "Task Submission",
+    // await sendNotification({
+    //   target: [submission.userId],
+    //   title: "Task Submission",
+    //   message: "Your task submission has been rejected",
+    // });
+
+    const templatePath = path.join(
+      __dirname,
+      "../templates/default_email.handlebars",
+    );
+
+    const defaultContent = fs.readFileSync(templatePath, "utf8");
+
+    const compileTemplate = handlebars.compile(defaultContent);
+
+    const template = compileTemplate({
+      fullName: user.fullName,
+      email: user.email,
       message: "Your task submission has been rejected",
     });
+
+    await sendEmail(user.email, "Task Submission", template);
 
     res.status(OK).json({
       success: true,
