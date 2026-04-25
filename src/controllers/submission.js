@@ -10,6 +10,7 @@ const { sendEmail } = require("../helpers/resend");
 const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
+const { Op } = require('sequelize');
 
 module.exports.createSubmission = async function (req, res, next) {
   try {
@@ -39,32 +40,28 @@ module.exports.createSubmission = async function (req, res, next) {
       return next(CustomError.badRequest('End date for this task has passed'))
     }
 
-    const previousSubmission = await Submission.findOne({
-      where: { taskId, userId }
+    const activeSubmission = await Submission.findOne({
+      where: {
+        taskId,
+        userId,
+        status: { [Op.or]: ['pending', 'approved'] }
+      }
     });
 
-    if (!previousSubmission) {
+    if (!activeSubmission) {
       if (task.usedSpots >= task.totalSpots) {
-        return next(CustomError.badRequest('The spots for the task have been filled'));
+        return next(CustomError.badRequest('Task spots are filled'));
       }
       await task.increment('usedSpots', { by: 1 });
     }
 
-    const submission = await Submission.create({
-      taskId,
-      userId,
-      link,
-    });
+    const submission = await Submission.create({ taskId, userId, link, status: "pending" });
 
     res.status(OK).json({
       success: true,
-      status: res.statusCode,
-      message: previousSubmission
-        ? 'Additional link submitted successfully'
-        : 'Submission created successfully',
+      message: activeSubmission ? 'Additional link added' : 'Submission created',
       data: submission,
     });
-
   } catch (error) {
     return next({ error });
   }
@@ -113,6 +110,17 @@ module.exports.approveSubmission = async function (req, res, next) {
     })
     if (!task) {
       return next(CustomError.badRequest('No task found with this submission'))
+    }
+
+    const alreadyPaid = await Submission.findOne({
+      where: { userId: user.id, taskId: task.id, status: 'approved', isPaid: true }
+    });
+
+    if (!alreadyPaid) {
+      const paymentAmount = task.totalPool / task.totalSpots;
+
+      await user.increment('balance', { by: paymentAmount });
+      submission.isPaid = true;
     }
 
     submission.status = "approved";
@@ -181,6 +189,18 @@ module.exports.rejectSubmission = async function (req, res, next) {
 
     submission.status = "rejected";
     await submission.save();
+
+    const otherActiveSubmissions = await Submission.count({
+      where: {
+        userId: submission.userId,
+        taskId: submission.taskId,
+        status: { [Op.or]: ['pending', 'approved'] }
+      }
+    });
+
+    if (otherActiveSubmissions === 0) {
+      await task.decrement('usedSpots', { by: 1 });
+    }
 
     // await sendNotification({
     //   target: [submission.userId],

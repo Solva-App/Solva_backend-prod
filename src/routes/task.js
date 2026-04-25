@@ -9,8 +9,8 @@ router.get('/:id', controllers.getTask)
 
 router.use(isAdmin)
 router.post('/create', fileParser.fields([{ name: "sponsorLogo", maxCount: 1 }, { name: "bannerImage", maxCount: 1 }]), controllers.createTask)
-router.post('/payout/:id', controllers.processTaskPayout)
-router.get('/review/:id', controllers.checkTaskReviewStatus)
+// router.post('/payout/:id', controllers.processTaskPayout)
+// router.get('/review/:id', controllers.checkTaskReviewStatus)
 router.patch('/:id', fileParser.fields([{ name: "sponsorLogo", maxCount: 1 }, { name: "bannerImage", maxCount: 1 }]), controllers.updateTask)
 router.delete('/:id', controllers.deleteTask)
 

@@ -234,126 +234,126 @@ module.exports.getTask = async function (req, res, next) {
   }
 }
 
-module.exports.checkTaskReviewStatus = async function (req, res, next) {
-  try {
-    const { id } = req.params;
+// module.exports.checkTaskReviewStatus = async function (req, res, next) {
+//   try {
+//     const { id } = req.params;
 
-    const submissionsCount = await Submission.count({
-      where: {
-        taskId: id
-      }
-    });
+//     const submissionsCount = await Submission.count({
+//       where: {
+//         taskId: id
+//       }
+//     });
 
-    if (submissionsCount === 0) {
-      return next(CustomError.badRequest('No submissions found for this task'));
-    }
+//     if (submissionsCount === 0) {
+//       return next(CustomError.badRequest('No submissions found for this task'));
+//     }
 
-    const pendingSubmission = await Submission.findOne({
-      where: {
-        taskId: id,
-        status: 'pending'
-      }
-    });
+//     const pendingSubmission = await Submission.findOne({
+//       where: {
+//         taskId: id,
+//         status: 'pending'
+//       }
+//     });
 
-    if (pendingSubmission) {
-      return res.status(OK).json({
-        success: true,
-        isComplete: false,
-        message: 'There are still pending submissions for this task.'
-      });
-    }
+//     if (pendingSubmission) {
+//       return res.status(OK).json({
+//         success: true,
+//         isComplete: false,
+//         message: 'There are still pending submissions for this task.'
+//       });
+//     }
 
-    res.status(OK).json({
-      success: true,
-      isComplete: true,
-      message: 'All submissions have been processed.'
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(OK).json({
+//       success: true,
+//       isComplete: true,
+//       message: 'All submissions have been processed.'
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
-module.exports.processTaskPayout = async function (req, res, next) {
-  const t = await sequelize.transaction();
-  try {
-    const { id } = req.params;
+// module.exports.processTaskPayout = async function (req, res, next) {
+//   const t = await sequelize.transaction();
+//   try {
+//     const { id } = req.params;
 
-    const task = await Task.findOne({
-      where: {
-        id: id,
-        status: 'ended'
-      }
-    });
-    if (!task) return next(CustomError.badRequest('Task not found or has not ended yet'));
+//     const task = await Task.findOne({
+//       where: {
+//         id: id,
+//         status: 'ended'
+//       }
+//     });
+//     if (!task) return next(CustomError.badRequest('Task not found or has not ended yet'));
 
-    if (task.payoutDistributed) {
-      return next(CustomError.badRequest('Payout has already been distributed for this task'));
-    }
+//     if (task.payoutDistributed) {
+//       return next(CustomError.badRequest('Payout has already been distributed for this task'));
+//     }
 
-    const pendingCount = await Submission.count({ where: { taskId: id, status: 'pending' } });
-    if (pendingCount > 0) {
-      return next(CustomError.badRequest('All submissions must be Approved or Rejected before payout'));
-    }
+//     const pendingCount = await Submission.count({ where: { taskId: id, status: 'pending' } });
+//     if (pendingCount > 0) {
+//       return next(CustomError.badRequest('All submissions must be Approved or Rejected before payout'));
+//     }
 
-    const approvedSubmissions = await Submission.findAll({
-      where: { taskId: id, status: 'approved' },
-      attributes: [[sequelize.fn('DISTINCT', sequelize.col('userId')), 'userId']],
-      raw: true
-    });
+//     const approvedSubmissions = await Submission.findAll({
+//       where: { taskId: id, status: 'approved' },
+//       attributes: [[sequelize.fn('DISTINCT', sequelize.col('userId')), 'userId']],
+//       raw: true
+//     });
 
-    const uniqueUserCount = approvedSubmissions.length;
+//     const uniqueUserCount = approvedSubmissions.length;
 
-    if (uniqueUserCount === 0) {
-      await task.update({ payoutDistributed: true }, { t });
-      await t.commit();
-      return res.status(OK).json({ success: true, message: 'No approved users. No funds distributed.' });
-    }
+//     if (uniqueUserCount === 0) {
+//       await task.update({ payoutDistributed: true }, { t });
+//       await t.commit();
+//       return res.status(OK).json({ success: true, message: 'No approved users. No funds distributed.' });
+//     }
 
-    const payoutPerUser = task.totalPool / uniqueUserCount;
+//     const payoutPerUser = task.totalPool / uniqueUserCount;
 
-    const userIds = approvedSubmissions.map(s => s.userId);
+//     const userIds = approvedSubmissions.map(s => s.userId);
 
-    await User.update(
-      { balance: sequelize.literal(`balance + ${payoutPerUser}`) },
-      {
-        where: { id: userIds },
-        t
-      }
-    );
+//     await User.update(
+//       { balance: sequelize.literal(`balance + ${payoutPerUser}`) },
+//       {
+//         where: { id: userIds },
+//         t
+//       }
+//     );
 
-    await task.update({
-      payoutDistributed: true,
-    }, { t });
+//     await task.update({
+//       payoutDistributed: true,
+//     }, { t });
 
-    await t.commit();
+//     await t.commit();
 
-    const templatePath = path.join(__dirname, "../templates/default_email.handlebars");
-    const defaultContent = fs.readFileSync(templatePath, "utf8");
-    const compileTemplate = handlebars.compile(defaultContent);
+//     const templatePath = path.join(__dirname, "../templates/default_email.handlebars");
+//     const defaultContent = fs.readFileSync(templatePath, "utf8");
+//     const compileTemplate = handlebars.compile(defaultContent);
 
-    const users = await User.findAll({
-      where: { id: userIds },
-      attributes: ['id', 'email', 'fullName']
-    });
+//     const users = await User.findAll({
+//       where: { id: userIds },
+//       attributes: ['id', 'email', 'fullName']
+//     });
 
-    const emailPromises = users.map(user => {
-      const htmlContent = compileTemplate({
-        fullName: user.fullName,
-        email: user.email,
-        message: `You have received a payout of ${payoutPerUser.toFixed(2)} for task "${task.title}". Your balance has been updated.`
-      });
-      return sendEmail(user.email, "Task Payout Received", htmlContent);
-    });
+//     const emailPromises = users.map(user => {
+//       const htmlContent = compileTemplate({
+//         fullName: user.fullName,
+//         email: user.email,
+//         message: `You have received a payout of ${payoutPerUser.toFixed(2)} for task "${task.title}". Your balance has been updated.`
+//       });
+//       return sendEmail(user.email, "Task Payout Received", htmlContent);
+//     });
 
-    await Promise.all(emailPromises);
+//     await Promise.all(emailPromises);
 
-    res.status(OK).json({
-      success: true,
-      message: `Distributed ${task.totalPool} among ${uniqueUserCount} users (${payoutPerUser.toFixed(2)} each).`
-    });
+//     res.status(OK).json({
+//       success: true,
+//       message: `Distributed ${task.totalPool} among ${uniqueUserCount} users (${payoutPerUser.toFixed(2)} each).`
+//     });
 
-  } catch (error) {
-    if (t) await t.rollback();
-    next(error);
-  }
-};
+//   } catch (error) {
+//     if (t) await t.rollback();
+//     next(error);
+//   }
+// };
