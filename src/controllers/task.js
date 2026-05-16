@@ -16,19 +16,43 @@ module.exports.createTask = async function (req, res, next) {
     const schema = new Schema({
       title: { type: 'string', required: true },
       overview: { type: 'string', required: true },
-      type: { type: 'string', required: false },
-      sponsorName: { type: 'string', required: false },
-      requirements: { type: 'string', required: false },
-      guidelines: { type: 'string', required: false },
-      selectionCriteria: { type: 'string', required: false },
-      howToSubmit: { type: 'string', required: false },
+      type: { type: 'string', required: true },
+      sponsorName: { type: 'string', required: true },
+      sponsorLogo: { type: 'string', required: true },
+      bannerImage: { type: 'string', required: true },
+      requirements: { type: 'array', required: true },
+      guidelines: { type: 'array', required: true },
+      selectionCriteria: { type: 'array', required: true },
+      howToSubmit: { type: 'array', required: true },
       startDate: { type: 'string', format: 'date-time', required: true },
       endDate: { type: 'string', format: 'date-time', required: true },
-      totalPool: { type: 'string', required: true },
-      totalSpots: { type: 'string', required: true },
+      totalPool: { type: 'number', required: true },
+      totalSpots: { type: 'number', required: true },
     })
 
-    const result = schema.validate(req.body)
+    const sanitizedBody = { ...req.body }
+
+    const numberFields = ['totalPool', 'totalSpots']
+    numberFields.forEach(field => {
+      if (sanitizedBody[field] !== undefined && sanitizedBody[field] !== '') {
+        sanitizedBody[field] = Number(sanitizedBody[field])
+      }
+    })
+
+    const arrayFields = ['requirements', 'guidelines', 'selectionCriteria', 'howToSubmit']
+    arrayFields.forEach(field => {
+      if (typeof sanitizedBody[field] === 'string') {
+        try {
+          let cleanStr = sanitizedBody[field].trim()
+          cleanStr = cleanStr.replace(/'/g, '"')
+          sanitizedBody[field] = JSON.parse(cleanStr)
+        } catch (e) {
+          sanitizedBody[field] = sanitizedBody[field].split(',').map(item => item.trim())
+        }
+      }
+    })
+
+    const result = schema.validate(sanitizedBody)
 
     if (result.error) {
       return next(
@@ -36,10 +60,7 @@ module.exports.createTask = async function (req, res, next) {
       )
     }
 
-    const body = req.body
-    console.log(body)
-
-    if (new Date(body.startDate) >= new Date(body.endDate)) {
+    if (new Date(sanitizedBody.startDate) >= new Date(sanitizedBody.endDate)) {
       return next(
         CustomError.badRequest('Start date must be before end date')
       )
@@ -49,34 +70,26 @@ module.exports.createTask = async function (req, res, next) {
     let bannerImage = null
 
     if (req.files?.sponsorLogo?.length) {
-
       const file = req.files.sponsorLogo[0]
-
       const upload = await firebase.fileUpload(file, 'tasks')
-
       if (upload instanceof CustomError) {
         return next(upload);
       }
-
       sponsorLogo = upload
     }
 
     if (req.files?.bannerImage?.length) {
-
       const file = req.files.bannerImage[0]
-
       const upload = await firebase.fileUpload(file, 'tasks')
-
       if (upload instanceof CustomError) {
         return next(upload)
       }
-
       bannerImage = upload
     }
 
     const task = await Task.create({
       owner: req.user.id,
-      ...req.body,
+      ...sanitizedBody,
       sponsorLogo,
       bannerImage,
     })
@@ -114,17 +127,43 @@ module.exports.updateTask = async function (req, res, next) {
       overview: { type: 'string', required: false },
       type: { type: 'string', required: false },
       sponsorName: { type: 'string', required: false },
-      requirements: { type: 'string', required: false },
-      guidelines: { type: 'string', required: false },
-      selectionCriteria: { type: 'string', required: false },
-      howToSubmit: { type: 'string', required: false },
+      sponsorLogo: { type: 'string', required: false },
+      bannerImage: { type: 'string', required: false },
+      requirements: { type: 'array', required: false },
+      guidelines: { type: 'array', required: false },
+      selectionCriteria: { type: 'array', required: false },
+      howToSubmit: { type: 'array', required: false },
       startDate: { type: 'string', format: 'date-time', required: false },
       endDate: { type: 'string', format: 'date-time', required: false },
-      totalPool: { type: 'string', required: false },
-      totalSpots: { type: 'string', required: false },
+      totalPool: { type: 'number', required: false },
+      totalSpots: { type: 'number', required: false },
     })
 
-    const result = schema.validate(req.body)
+    const sanitizedBody = { ...req.body }
+
+    const numberFields = ['totalPool', 'totalSpots']
+    numberFields.forEach(field => {
+      if (sanitizedBody[field] !== undefined && sanitizedBody[field] !== '') {
+        sanitizedBody[field] = Number(sanitizedBody[field])
+      }
+    })
+
+    const arrayFields = ['requirements', 'guidelines', 'selectionCriteria', 'howToSubmit']
+    arrayFields.forEach(field => {
+      if (typeof sanitizedBody[field] === 'string') {
+        try {
+          let cleanStr = sanitizedBody[field].trim()
+          // Fixes standard single quote arrays "[ 'item1', 'item2' ]" -> '["item1", "item2"]'
+          cleanStr = cleanStr.replace(/'/g, '"')
+          sanitizedBody[field] = JSON.parse(cleanStr)
+        } catch (e) {
+          // Fallback if it's sent as a standard comma-separated text list
+          sanitizedBody[field] = sanitizedBody[field].split(',').map(item => item.trim())
+        }
+      }
+    })
+
+    const result = schema.validate(sanitizedBody)
 
     if (result.error) {
       return next(
@@ -138,48 +177,39 @@ module.exports.updateTask = async function (req, res, next) {
       return next(CustomError.badRequest('Task with that id does not exist'))
     }
 
-    const body = req.body
+    const finalStartDate = sanitizedBody.startDate ? new Date(sanitizedBody.startDate) : new Date(task.startDate)
+    const finalEndDate = sanitizedBody.endDate ? new Date(sanitizedBody.endDate) : new Date(task.endDate)
 
-    if (body.startDate && body.endDate) {
-      if (new Date(body.startDate) >= new Date(body.endDate)) {
-        return next(
-          CustomError.badRequest('Start date must be before end date')
-        )
-      }
+    if (finalStartDate >= finalEndDate) {
+      return next(
+        CustomError.badRequest('Start date must be before end date')
+      )
     }
 
     let sponsorLogo = null
     let bannerImage = null
 
     if (req.files?.sponsorLogo?.length) {
-
       const file = req.files.sponsorLogo[0]
-
       const upload = await firebase.fileUpload(file, 'tasks')
-
       if (upload instanceof CustomError) {
         return next(upload);
       }
-
       sponsorLogo = upload
     }
 
     if (req.files?.bannerImage?.length) {
-
       const file = req.files.bannerImage[0]
-
       const upload = await firebase.fileUpload(file, 'tasks')
-
       if (upload instanceof CustomError) {
         return next(upload)
       }
-
       bannerImage = upload
     }
 
-    // Object.keys(body).forEach((key) => {
-    //   task[key] = body[key]
-    // })
+    Object.keys(sanitizedBody).forEach((key) => {
+      task[key] = sanitizedBody[key]
+    })
 
     task.sponsorLogo = sponsorLogo ?? task.sponsorLogo
     task.bannerImage = bannerImage ?? task.bannerImage

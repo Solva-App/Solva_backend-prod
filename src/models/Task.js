@@ -4,7 +4,7 @@ const { sequelize } = require('../database/db')
 const taskSchema = {
   title: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   overview: {
     type: DataTypes.TEXT,
@@ -27,37 +27,41 @@ const taskSchema = {
     allowNull: true,
   },
   requirements: {
-    type: DataTypes.TEXT,
+    type: DataTypes.JSON,
     allowNull: true,
+    defaultValue: []
   },
   guidelines: {
-    type: DataTypes.TEXT,
+    type: DataTypes.JSON,
     allowNull: true,
+    defaultValue: []
   },
   selectionCriteria: {
-    type: DataTypes.TEXT,
+    type: DataTypes.JSON,
     allowNull: true,
+    defaultValue: []
   },
   howToSubmit: {
-    type: DataTypes.TEXT,
+    type: DataTypes.JSON,
     allowNull: true,
+    defaultValue: []
   },
   startDate: {
     type: DataTypes.DATE,
-    allowNull: false,
+    allowNull: true,
   },
   endDate: {
     type: DataTypes.DATE,
-    allowNull: false,
+    allowNull: true,
   },
   totalPool: {
-    type: DataTypes.DECIMAL(12, 2),
-    allowNull: false,
+    type: DataTypes.DECIMAL(24, 2),
+    allowNull: true,
     defaultValue: 0,
   },
   totalSpots: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
   },
   usedSpots: {
     type: DataTypes.INTEGER,
