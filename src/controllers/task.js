@@ -109,11 +109,25 @@ module.exports.getTasks = async function (req, res, next) {
   try {
     const tasks = await Task.findAll()
 
+    const parsedTasks = tasks.map(task => {
+      const taskObj = task.toJSON ? task.toJSON() : task
+      const arrayFields = ['requirements', 'guidelines', 'selectionCriteria', 'howToSubmit']
+      arrayFields.forEach(field => {
+        if (typeof taskObj[field] === 'string') {
+          try {
+            taskObj[field] = JSON.parse(taskObj[field])
+          } catch (e) {
+          }
+        }
+      })
+      return taskObj
+    })
+
     res.status(OK).json({
       success: true,
       status: res.statusCode,
       message: 'Task fetched successfully',
-      data: tasks,
+      data: parsedTasks,
     })
   } catch (error) {
     return next({ error })
@@ -253,11 +267,23 @@ module.exports.getTask = async function (req, res, next) {
     if (!task) {
       return next(CustomError.badRequest('Invalid task id'))
     }
+
+    const taskObj = task.toJSON ? task.toJSON() : task
+    const arrayFields = ['requirements', 'guidelines', 'selectionCriteria', 'howToSubmit']
+    arrayFields.forEach(field => {
+      if (typeof taskObj[field] === 'string') {
+        try {
+          taskObj[field] = JSON.parse(taskObj[field])
+        } catch (e) {
+        }
+      }
+    })
+
     res.status(OK).json({
       success: true,
       status: res.statusCode,
       message: 'Task fetched successfully',
-      data: task,
+      data: taskObj,
     })
   } catch (error) {
     return next({ error })
