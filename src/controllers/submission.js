@@ -71,7 +71,8 @@ module.exports.getTaskSubmissions = async function (req, res, next) {
   try {
     const submissions = await Submission.findAll({
       where: {
-        taskId: req.params.taskId
+        taskId: req.params.taskId,
+        status: { [Op.or]: ['pending', 'approved'] }
       }
     })
 

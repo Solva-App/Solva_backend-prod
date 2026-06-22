@@ -18,6 +18,10 @@ const submissionSchema = {
   status: {
     type: ENUM('pending', 'approved', 'rejected'),
     defaultValue: "pending",
+  },
+  isPaid: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   }
 }
 
