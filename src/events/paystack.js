@@ -10,7 +10,7 @@ const event = new EventEmitter()
 event.on('charge.success', async function (_event, data, req, res, next) {
     try {
         const date = new Date()
-        const expiryDate = new Date(date.setMonth(date.getMonth() + 3));
+        const expiryDate = new Date(date.setMonth(date.getMonth() + 1));
 
         const user = await User.findOne({ where: { email: data.customer.email } })
         user.chargeAuthCode = data.authorization.authorization_code
