@@ -175,6 +175,20 @@ module.exports.deleteProject = async function (req, res, next) {
       return next(CustomError.notFound('Project not found'))
     }
 
+    const documents = await Document.findAll({
+      where: { model: "project", modelId: project.id }
+    })
+
+    const deletePromises = documents.map(doc => {
+      if (doc.url) {
+        return firebase.deleteFile(doc.url);
+      }
+      return Promise.resolve(true);
+    });
+
+    await Promise.all(deletePromises);
+
+
     await Document.destroy({
       where: { model: "project", modelId: project.id }
     })
@@ -206,6 +220,19 @@ module.exports.bulkDeleteProjects = async function (req, res, next) {
     if (project.length === 0) {
       return next(CustomError.badRequest("No matching project found"));
     }
+
+    const documents = await Document.findAll({
+      where: { model: "project", modelId: projectIds }
+    });
+
+    const deletePromises = documents.map(doc => {
+      if (doc.url) {
+        return firebase.deleteFile(doc.url);
+      }
+      return Promise.resolve(true);
+    });
+
+    await Promise.all(deletePromises);
 
     await Document.destroy({
       where: { model: "project", modelId: projectIds }
@@ -260,7 +287,7 @@ module.exports.approveProject = async function (req, res, next) {
     }
 
     if (uploader.category === "premium") {
-      uploader.balance += 2500;
+      uploader.balance += 2000;
       await uploader.save();
     }
 

@@ -83,10 +83,17 @@ module.exports.getSlide = async function (req, res, next) {
 
 module.exports.deleteSlide = async function (req, res, next) {
     try {
-        const slide = await Slide.destroy({ where: { id: req.params.id } })
+      const slide = await Slide.findByPk(req.params.id);
+
         if (!slide) {
             return next(CustomError.badRequest('Invalid slide id'))
         }
+
+        if (slide.url) {
+            await firebase.fileDelete(slide.url)
+        }
+
+        await Slide.destroy({ where: { id: req.params.id } })
 
         res.status(OK).json({
             success: true,

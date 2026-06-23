@@ -248,6 +248,14 @@ module.exports.deleteTask = async function (req, res, next) {
       return next(CustomError.badRequest('Task with that id does not exist'))
     }
 
+    if (task.sponsorLogo) {
+      await firebase.fileDelete(task.sponsorLogo)
+    }
+
+    if (task.bannerImage) {
+      await firebase.fileDelete(task.bannerImage)
+    }
+
     await task.destroy()
 
     res.status(OK).json({

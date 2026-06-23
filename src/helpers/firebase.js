@@ -1,36 +1,38 @@
 const storage = require('@firebase/storage')
-const messaging = require('@firebase/messaging')
 const app = require('@firebase/app')
 const firebaseKeys = require('../../firebaseConfig')
-
 const CustomError = require('./error')
 
-app.initializeApp(firebaseKeys.storage)
+// Initialize Firebase App
+const firebaseApp = app.initializeApp(firebaseKeys.storage)
 
-const bucket = storage.getStorage()
+// Initialize Storage instance
+const bucket = storage.getStorage(firebaseApp)
 
 module.exports.fileUpload = async function (file, location) {
   try {
     const metadata = { contentType: file.mimetype }
-    const ref = storage.ref(bucket, `${location}/${Math.round(Math.random() * 1e9)}-${file.originalname} `)
-    const snapshort = await storage.uploadBytes(ref, file.buffer, metadata)
-    return await storage.getDownloadURL(snapshort.ref)
+    const ref = storage.ref(bucket, `${location}/${Math.round(Math.random() * 1e9)}-${file.originalname}`)
+    const snapshot = await storage.uploadBytes(ref, file.buffer, metadata)
+    return await storage.getDownloadURL(snapshot.ref)
   } catch (error) {
     console.log(error)
     return CustomError.internalServerError('Something went wrong', error)
   }
 }
 
-// module.exports.deleteFile = async function (filePath) {
-//   try {
-//     const fileRef = storage.ref(bucket, filePath);
-//     await storage.deleteObject(fileRef);
-//     return true;
-//   } catch (error) {
-//     console.error("Firebase Delete Error:", error);
-//     return false;
-//   }
-// };
+module.exports.deleteFile = async function (fileUrlOrPath) {
+  try {
+    const fileRef = storage.ref(bucket, fileUrlOrPath);
+
+    await storage.deleteObject(fileRef);
+    return true;
+  } catch (error) {
+    console.error("Firebase Delete Error:", error);
+    return CustomError.internalServerError('Something went wrong', error)
+  }
+};
+
 
 // module.exports.sendNotification = async (token, { title, body, data }) => {
 //   try {
@@ -81,7 +83,7 @@ module.exports.fileUpload = async function (file, location) {
 /**
  * To use firebase cloud messaging, you need to have a service worker
  * in your frontend, you can get the token using the following code
- * 
+ *
  * const messaging = firebase.messaging();
  * messaging
  *   .requestPermission()
@@ -92,9 +94,9 @@ module.exports.fileUpload = async function (file, location) {
  *   .catch((err) => {
  *     console.log('Unable to get permission to notify.', err);
  *   });
- * 
+ *
  * Then in your server, you can use the following function to send a message
- * 
+ *
  * const sendNotification = async (token, { title, body, data }) => {
  *   try {
  *     const response = await messaging.sendToToken(token, {
@@ -110,9 +112,9 @@ module.exports.fileUpload = async function (file, location) {
  *     return CustomError.internalServerError('Something went wrong', error)
  *   }
  * }
- * 
+ *
  * You can then call the function like this:
- * 
+ *
  * const result = await sendNotification(token, {
  *   title: 'Hello',
  *   body: 'This is a notification',
@@ -122,6 +124,3 @@ module.exports.fileUpload = async function (file, location) {
  * })
  * console.log(result)
  */
-
-
-

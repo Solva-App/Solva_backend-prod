@@ -181,6 +181,16 @@ module.exports.deletePastQuestion = async function (req, res, next) {
       return next(CustomError.badRequest("Question does not exist"));
     }
 
+    const documents = await Document.findAll({
+      where: { model: "question", modelId: question.id }
+    });
+
+    for (const doc of documents) {
+      if (doc.url) {
+        await firebase.deleteFile(doc.url);
+      }
+    }
+
     await Document.destroy({
       where: { model: "question", modelId: question.id }
     })
@@ -212,6 +222,16 @@ module.exports.bulkDeletePastQuestions = async function (req, res, next) {
     if (questions.length === 0) {
       return next(CustomError.badRequest("No matching questions found"));
     }
+
+    const documents = await Document.findAll({
+      where: { model: "question", modelId: questionIds }
+    });
+
+    const deletePromises = documents
+      .filter(doc => doc.url)
+      .map(doc => firebase.deleteFile(doc.url));
+
+    await Promise.allSettled(deletePromises);
 
     await Document.destroy({
       where: { model: "question", modelId: questionIds }
@@ -309,6 +329,7 @@ module.exports.approvePastQuestion = async function (req, res, next) {
     return next({ error });
   }
 };
+
 
 module.exports.declinePastQuestion = async function (req, res, next) {
   try {
