@@ -1,9 +1,10 @@
 const router = require('express').Router()
 const { fileParser } = require('../middlewares')
-const { isAdmin, auth } = require('../middlewares/auth')
+const { isAdmin, auth, isPremium } = require('../middlewares/auth')
 const controllers = require('./../controllers/submission')
 
 router.use(auth)
+router.use(isPremium)
 router.post('/create', controllers.createSubmission)
 
 router.use(isAdmin)

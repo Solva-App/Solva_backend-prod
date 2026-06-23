@@ -58,3 +58,16 @@ module.exports.isAdmin = async function (req, res, next) {
     return next({ error })
   }
 }
+
+module.exports.isPremium = async function (req, res, next) {
+  try {
+    if (req.user && req.user.isAdmin) return next()
+
+    if (!req.user || req.user.category !== 'premium') {
+      return next(CustomError.unauthorizedRequest('endpoint reserved for premium users only'))
+    }
+    return next()
+  } catch (error) {
+    return next({ error })
+  }
+}

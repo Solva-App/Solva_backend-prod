@@ -1,9 +1,10 @@
 const router = require('express').Router()
 const { fileParser } = require('../middlewares')
-const { isAdmin, auth } = require('../middlewares/auth')
+const { isAdmin, auth, isPremium } = require('../middlewares/auth')
 const controllers = require('./../controllers/task')
 
 router.use(auth)
+router.use(isPremium)
 router.get('/', controllers.getTasks)
 router.get('/:id', controllers.getTask)
 
