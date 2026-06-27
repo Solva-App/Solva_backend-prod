@@ -60,6 +60,7 @@ const submissionRoutes = require("./routes/submission");
 const quizRoutes = require("./routes/quiz");
 const flashcardRoutes = require("./routes/flashcard");
 const lessonRoutes = require("./routes/lesson");
+const communityRoutes = require("./routes/community");
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -90,6 +91,7 @@ app.use("/api/v1/submissions", submissionRoutes);
 app.use("/api/v1/quiz", quizRoutes);
 app.use("/api/v1/flashcard", flashcardRoutes);
 app.use("/api/v1/lesson", lessonRoutes);
+app.use("/api/v1/community", communityRoutes);
 
 require("./helpers/socket")(io);
 initNotificationIO(io);
