@@ -1,0 +1,42 @@
+name: Node.js Backend Deployment to Namecheap
+
+# 1. Trigger the automation rule
+on:
+  push:
+    branches:
+      - main  # Change this to 'master' if your default branch is named master
+
+jobs:
+  deploy-job:
+    name: Sync Files to Server
+    runs-on: ubuntu-latest  # Spins up a fresh Linux container
+
+    steps:
+    # Step A: Download your repository code onto the cloud runner
+    - name: Fetch Repository Code
+      uses: actions/checkout@v4
+
+    # Step B: Securely connect and sync files to Namecheap cPanel over FTP
+    - name: FTP Sync Execution
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        protocol: ftps
+        port: 21
+        local-dir: ./
+
+        # Replace the path below with your actual target app folder in Namecheap cPanel
+        # Example: public_html/ or domains/yourdomain.com/public_html/
+        server-dir: /
+
+        # Files you do NOT want to push to production
+        exclude: |
+          **/.git*
+          **/.github/**
+          **/.env**
+          **/node_modules/**
+          **/logs/**
+          **/uploads/**
+          **/tmp/**
