@@ -285,6 +285,7 @@ module.exports.updateProfile = async function (req, res, next) {
         toLower: true,
         enum: ["male", "female"],
       },
+      profilePic: { type: "string", required: false },
     });
 
     const result = schema.validate(req.body);
@@ -295,16 +296,37 @@ module.exports.updateProfile = async function (req, res, next) {
 
     const body = result.data;
 
-    if (body.fullName.split(" ").length < 2) {
+    if (body.fullName && body.fullName.split(" ").length < 2) {
       return next(CustomError.badRequest("Full name is invalid"));
     }
 
-    // update the nameobject
+    let media = null;
+    const file = req.file || (Array.isArray(req.files?.media) ? req.files.media[0] : req.files?.media);
+
+    if (file) {
+      if (req.user.profilePic) {
+        try {
+          await firebase.fileDelete(req.user.profilePic);
+        } catch (deleteError) {
+          console.error("Failed to delete old profile picture:", deleteError);
+        }
+      }
+      const upload = await firebase.fileUpload(file, 'profiles');
+      if (upload instanceof CustomError) {
+        return next(upload);
+      }
+      media = upload;
+    }
+
     req.user.fullName = body.fullName ?? req.user.fullName;
     req.user.address = body.address ?? req.user.address;
     req.user.email = body.email ?? req.user.email;
     req.user.phone = body.phone ?? req.user.phone;
     req.user.gender = body.gender ?? req.user.gender;
+
+    if (media) {
+      req.user.profilePic = media;
+    }
 
     await req.user.save();
 

@@ -18,6 +18,10 @@ const userSchema = {
     type: STRING,
     allowNull: true,
   },
+  profilePic: {
+    type: STRING,
+    allowNull: true,
+  },
   address: {
     type: STRING,
     allowNull: true,
@@ -104,7 +108,7 @@ const User = sequelize.define("User", userSchema, {
         user.balance = Number(user.balance);
       });
     },
-    beforeSave: () => {},
+    beforeSave: () => { },
   },
 });
 

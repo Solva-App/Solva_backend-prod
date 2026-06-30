@@ -18,7 +18,7 @@ router.post("/admin/forgotten/password/reset", controllers.adminResetForgottenPa
 router.use(auth);
 router.get("/", controllers.getUser);
 router.patch("/update/password", controllers.updatePassword);
-router.patch("/", controllers.updateProfile);
+router.patch("/", fileParser.single('profilePic'), controllers.updateProfile);
 router.get("/balance/:id", controllers.getUserBalance);
 router.get("/:id", controllers.getUserById);
 // router.post("/device/token", controllers.storeDeviceToken);
