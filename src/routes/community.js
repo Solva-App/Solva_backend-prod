@@ -6,6 +6,7 @@ const { fileParser } = require('../middlewares')
 router.use(auth);
 router.get('/posts', controllers.getPosts);
 router.get('/posts/:id', controllers.getPost);
+router.delete('/posts/:id', controllers.deletePost);
 router.get('/hashtags', controllers.getHashtags);
 router.get('/hashtags/trending', controllers.getTrendingHashtags);
 router.get('/hashtags/:name', controllers.getHashtag);

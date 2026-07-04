@@ -8,6 +8,7 @@ const PostLike = require('../models/PostLike');
 const CommentLike = require('../models/PostCommentLike');
 const Hashtag = require('../models/Hashtag');
 const firebase = require('../helpers/firebase');
+const { sequelize } = require('../database/db')
 
 module.exports.getPosts = async function (req, res, next) {
   try {
@@ -67,6 +68,7 @@ module.exports.getPost = async function (req, res, next) {
     return next({ error });
   }
 };
+
 
 module.exports.getHashtags = async function (req, res, next) {
   try {
@@ -174,6 +176,85 @@ module.exports.createPost = async function (req, res, next) {
       data: post,
     });
   } catch (error) {
+    return next({ error });
+  }
+};
+
+module.exports.deletePost = async function (req, res, next) {
+  const t = await sequelize.transaction();
+
+  try {
+    const post = await Post.findByPk(req.params.id, { transaction: t });
+
+    if (!post) {
+      await t.rollback();
+      return next(CustomError.notFound('Post not found'));
+    }
+
+    if (post.userId != req.user.id) {
+      await t.rollback();
+      return next(CustomError.badRequest('Unauthorized to delete this post'));
+    }
+
+    const comments = await PostComment.findAll({
+      where: { postId: post.id },
+      attributes: ['id'],
+      transaction: t
+    });
+    const commentIds = comments.map((c) => c.id);
+
+    if (commentIds.length > 0) {
+      await CommentLike.destroy({
+        where: { postCommentId: { [Op.in]: commentIds } },
+        transaction: t
+      });
+    }
+
+    await PostComment.destroy({ where: { postId: post.id }, transaction: t });
+    await PostLike.destroy({ where: { postId: post.id }, transaction: t });
+
+    const hashtags = Array.isArray(post.hashtags)
+      ? post.hashtags
+      : (typeof post.hashtags === 'string' ? JSON.parse(post.hashtags) : []);
+
+    if (hashtags.length > 0) {
+      for (const tag of hashtags) {
+        const hashtag = await Hashtag.findOne({ where: { name: tag }, transaction: t });
+        if (hashtag) {
+          const newCount = Math.max(0, hashtag.postsCount - 1);
+          if (newCount === 0) {
+            await hashtag.destroy({ transaction: t });
+          } else {
+            await hashtag.update({ postsCount: newCount }, { transaction: t });
+          }
+        }
+      }
+    }
+
+    const mediaUrl = post.mediaUrl;
+
+    await post.destroy({ transaction: t });
+
+    await t.commit();
+
+    if (mediaUrl) {
+      try {
+        await firebase.deleteFile(mediaUrl);
+      } catch (firebaseError) {
+        console.error("Failed to delete media from Firebase:", firebaseError);
+      }
+    }
+
+    return res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Post deleted successfully'
+    });
+
+  } catch (error) {
+    if (!t.finished) {
+      await t.rollback();
+    }
     return next({ error });
   }
 };
