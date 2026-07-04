@@ -150,6 +150,7 @@ module.exports.createPost = async function (req, res, next) {
     const post = await Post.create({
       userId: req.user.id,
       username: req.user.fullName,
+      profilePic: req.user.profilePic || null,
       campus: (campus && campus.trim()) || '',
       content: content.trim(),
       mediaUrl: media,
@@ -311,6 +312,8 @@ module.exports.createComment = async function (req, res, next) {
     const comment = await PostComment.create({
       content: result.data.content.trim(),
       userId: req.user.id,
+      username: req.user.fullName,
+      profilePic: req.user.profilePic || null,
       postId: post.id,
     });
 

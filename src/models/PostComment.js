@@ -10,6 +10,14 @@ const postCommentSchema = {
     type: DataTypes.INTEGER,
     allowNull: false
   },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  profilePic: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   postId: {
     type: DataTypes.INTEGER,
     allowNull: false

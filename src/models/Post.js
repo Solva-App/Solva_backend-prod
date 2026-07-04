@@ -10,6 +10,10 @@ const postSchema = {
     type: DataTypes.STRING,
     allowNull: false
   },
+  profilePic: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   campus: {
     type: DataTypes.STRING,
     allowNull: false
