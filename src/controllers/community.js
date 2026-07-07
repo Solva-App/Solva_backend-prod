@@ -39,7 +39,6 @@ function buildCommentTree(flatComments) {
 
 module.exports.getPosts = async function (req, res, next) {
   try {
-    console.log(req.user, 'lll')
     const queryConditions = {};
     if (req.query.search) {
       queryConditions.content = { [Op.like]: `%${req.query.search}%` };
@@ -194,7 +193,6 @@ module.exports.createPost = async function (req, res, next) {
     if (req.files && req.files.length > 0) {
       for (let file of req.files) {
         if (file.fieldname === 'media') {
-          console.log(file.fieldname);
           files[file.fieldname].push(
             await image.modifyStringImageFile(body['media'].length ? body[file.fieldname] : file)
           );
@@ -269,7 +267,6 @@ module.exports.createPost = async function (req, res, next) {
 
 module.exports.deletePost = async function (req, res, next) {
   const t = await sequelize.transaction();
-
   try {
     const post = await Post.findByPk(req.params.id, { transaction: t });
 
@@ -306,6 +303,7 @@ module.exports.deletePost = async function (req, res, next) {
         ? JSON.parse(post.hashtags)
         : [];
 
+
     if (hashtags.length > 0) {
       for (const tag of hashtags) {
         const hashtag = await Hashtag.findOne({
@@ -323,17 +321,22 @@ module.exports.deletePost = async function (req, res, next) {
       }
     }
 
-    const mediaUrl = post.mediaUrl;
+    const mediaUrl = Array.isArray(post.mediaUrl)
+      ? post.mediaUrl
+      : typeof post.mediaUrl === "string"
+        ? JSON.parse(post.mediaUrl)
+        : [];
 
     await post.destroy({ transaction: t });
 
     await t.commit();
 
-    if (mediaUrl) {
+    if (mediaUrl.length > 0) {
       try {
-        await firebase.deleteFile(mediaUrl);
+        const deletePromises = mediaUrl.map((url) => firebase.deleteFile(url));
+        await Promise.all(deletePromises);
       } catch (firebaseError) {
-        console.error("Failed to delete media from Firebase:", firebaseError);
+        console.error("Failed to delete media batch from Firebase:", firebaseError);
       }
     }
 
@@ -343,10 +346,10 @@ module.exports.deletePost = async function (req, res, next) {
       message: "Post deleted successfully",
     });
   } catch (error) {
-    if (!t.finished) {
+    if (t && !t.finished) {
       await t.rollback();
     }
-    return next({ error });
+    return next(error);
   }
 };
 
