@@ -1,82 +1,108 @@
-const CustomError = require('../helpers/error');
-const { Schema } = require('json-validace');
-const { OK } = require('http-status-codes');
-const { Op, fn, col, where } = require('sequelize');
-const Post = require('../models/Post');
-const PostComment = require('../models/PostComment');
-const PostLike = require('../models/PostLike');
-const CommentLike = require('../models/PostCommentLike');
-const Hashtag = require('../models/Hashtag');
-const firebase = require('../helpers/firebase');
-const { sequelize } = require('../database/db')
+const CustomError = require("../helpers/error");
+const { Schema } = require("json-validace");
+const { OK } = require("http-status-codes");
+const { Op, fn, col, where } = require("sequelize");
+const Post = require("../models/Post");
+const PostComment = require("../models/PostComment");
+const PostLike = require("../models/PostLike");
+const CommentLike = require("../models/PostCommentLike");
+const PostViews = require('../models/PostViews');
+const Hashtag = require("../models/Hashtag");
+const firebase = require("../helpers/firebase");
+const { sequelize } = require("../database/db");
+const image = require('./../helpers/image')
 
 module.exports.getPosts = async function (req, res, next) {
   try {
-    const where = {};
+    const queryConditions = {};
     if (req.query.search) {
-      where.content = { [Op.like]: `%${req.query.search}%` };
+      queryConditions.content = { [Op.like]: `%${req.query.search}%` };
     }
-    const posts = await Post.findAll({ where, order: [['createdAt', 'DESC']] });
+
+    const posts = await Post.findAll({ where: queryConditions, order: [["createdAt", "DESC"]] });
     const userId = req.user.id;
-    let postsWithLike = posts;
     const postIds = posts.map((p) => p.id);
-    const likes = await PostLike.findAll({ where: { userId, postId: { [Op.in]: postIds } } });
+
+    const likes = await PostLike.findAll({
+      where: { userId, postId: { [Op.in]: postIds } },
+    });
     const likedSet = new Set(likes.map((l) => l.postId));
-    postsWithLike = posts.map((p) => {
+
+    const postsWithDetails = posts.map((p) => {
       const postData = p.toJSON();
       return {
         ...postData,
         liked: likedSet.has(p.id),
-        hashtags: typeof postData.hashtags === 'string' ? JSON.parse(postData.hashtags) : postData.hashtags,
+        mediaUrl: typeof postData.mediaUrl === "string" ? JSON.parse(postData.mediaUrl) : (postData.mediaUrl || []),
+        hashtags: typeof postData.hashtags === "string" ? JSON.parse(postData.hashtags) : (postData.hashtags || []),
       };
     });
+
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Posts fetched successfully',
-      data: postsWithLike,
+      message: "Posts fetched successfully",
+      data: postsWithDetails,
     });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
 
 module.exports.getPost = async function (req, res, next) {
   try {
-    const post = await Post.findByPk(req.params.id);
-    if (!post) return next(CustomError.notFound('Post not found'));
+    const postId = req.params.id;
     const userId = req.user.id;
+
+    const post = await Post.findByPk(postId);
+    if (!post) return next(CustomError.notFound("Post not found"));
+
+    if (userId) {
+      const alreadyViewed = await PostViews.findOne({
+        where: { userId, postId }
+      });
+
+      if (!alreadyViewed) {
+        await PostViews.create({ userId, postId });
+        await post.increment('views', { by: 1 });
+        await post.reload();
+      }
+    }
+
     let liked = false;
     if (userId) {
-      const existing = await PostLike.findOne({ where: { userId, postId: post.id } });
-      liked = !!existing;
+      const existingLike = await PostLike.findOne({
+        where: { userId, postId: post.id },
+      });
+      liked = !!existingLike;
     }
 
     const postData = post.toJSON ? post.toJSON() : post;
+
     const normalizedPost = {
       ...postData,
-      hashtags: typeof postData.hashtags === 'string' ? JSON.parse(postData.hashtags) : postData.hashtags,
+      mediaUrl: typeof postData.mediaUrl === "string" ? JSON.parse(postData.mediaUrl) : (postData.mediaUrl || []),
+      hashtags: typeof postData.hashtags === "string" ? JSON.parse(postData.hashtags) : (postData.hashtags || []),
     };
 
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Post fetched successfully',
+      message: "Post fetched successfully",
       data: { post: normalizedPost, liked },
     });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
 
-
 module.exports.getHashtags = async function (req, res, next) {
   try {
-    const hashtags = await Hashtag.findAll({ order: [['postsCount', 'DESC']] });
+    const hashtags = await Hashtag.findAll({ order: [["postsCount", "DESC"]] });
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Hashtags fetched successfully',
+      message: "Hashtags fetched successfully",
       data: hashtags,
     });
   } catch (error) {
@@ -86,8 +112,13 @@ module.exports.getHashtags = async function (req, res, next) {
 
 module.exports.getTrendingHashtags = async function (req, res, next) {
   try {
-    const hashtags = await Hashtag.findAll({ order: [['postsCount', 'DESC']], limit: 5 });
-    res.status(OK).json({ success: true, status: res.statusCode, data: hashtags });
+    const hashtags = await Hashtag.findAll({
+      order: [["postsCount", "DESC"]],
+      limit: 5,
+    });
+    res
+      .status(OK)
+      .json({ success: true, status: res.statusCode, data: hashtags });
   } catch (error) {
     return next({ error });
   }
@@ -95,14 +126,25 @@ module.exports.getTrendingHashtags = async function (req, res, next) {
 
 module.exports.getHashtag = async function (req, res, next) {
   try {
-    const hashtagName = req.params.name.startsWith('#') ? req.params.name : `#${req.params.name}`;
+    const hashtagName = req.params.name.startsWith("#")
+      ? req.params.name
+      : `#${req.params.name}`;
     const hashtag = await Hashtag.findOne({ where: { name: hashtagName } });
-    if (!hashtag) return next(CustomError.notFound('Hashtag not found'));
+    if (!hashtag) return next(CustomError.notFound("Hashtag not found"));
     const posts = await Post.findAll({
-      where: where(fn('JSON_CONTAINS', col('hashtags'), JSON.stringify([hashtag.name])), 1),
-      order: [['createdAt', 'DESC']],
+      where: where(
+        fn("JSON_CONTAINS", col("hashtags"), JSON.stringify([hashtag.name])),
+        1,
+      ),
+      order: [["createdAt", "DESC"]],
     });
-    res.status(OK).json({ success: true, status: res.statusCode, data: { hashtag, postsCount: posts.length, posts } });
+    res
+      .status(OK)
+      .json({
+        success: true,
+        status: res.statusCode,
+        data: { hashtag, postsCount: posts.length, posts },
+      });
   } catch (error) {
     return next({ error });
   }
@@ -111,47 +153,65 @@ module.exports.getHashtag = async function (req, res, next) {
 module.exports.createPost = async function (req, res, next) {
   try {
     const schema = new Schema({
-      content: { type: 'string', required: true },
-      media: { type: 'string', required: false },
-      hashtags: { type: 'array', required: false, items: { type: 'string' } },
-      campus: { type: 'string', required: false },
+      content: { type: "string", required: true },
+      media: { type: "array", required: false, items: { type: "string" } },
+      hashtags: { type: "array", required: false, items: { type: "string" } },
+      campus: { type: "string", required: false },
     });
 
-    const result = schema.validate(req.body);
+    req.body.media = []
+    let { body } = req
+    let files = {
+      media: [],
+    };
+
+    if (req.files && req.files.length > 0) {
+      for (let file of req.files) {
+        if (file.fieldname === 'media') {
+          console.log(file.fieldname);
+          files[file.fieldname].push(
+            await image.modifyStringImageFile(body['media'].length ? body[file.fieldname] : file)
+          );
+        }
+      }
+    }
+
+    const result = schema.validate({ ...body, ...files });
     if (result.error) {
       return next(CustomError.badRequest('Invalid request body', result.error));
     }
 
-    let media = null;
-    const file = req.file || (Array.isArray(req.files?.media) ? req.files.media[0] : req.files?.media);
-
-    if (file) {
+    for (const file of files.media) {
       const upload = await firebase.fileUpload(file, 'posts');
       if (upload instanceof CustomError) {
         return next(upload);
       }
-      media = upload;
+
+      body.media.push(upload);
     }
 
+    const media = body.media;
     const { content, hashtags: rawHashtags, campus } = result.data;
-
     let processedHashtags = [];
 
     if (rawHashtags && rawHashtags.length > 0) {
-      processedHashtags = [...new Set(rawHashtags
-        .filter((tag) => typeof tag === 'string' && tag.trim())
-        .map((tag) => {
-          const cleanTag = tag.trim().toLowerCase();
-          return cleanTag.startsWith('#') ? cleanTag : `#${cleanTag}`;
-        })
-      )];
+      processedHashtags = [
+        ...new Set(
+          rawHashtags
+            .filter((tag) => typeof tag === "string" && tag.trim())
+            .map((tag) => {
+              const cleanTag = tag.trim().toLowerCase();
+              return cleanTag.startsWith("#") ? cleanTag : `#${cleanTag}`;
+            }),
+        ),
+      ];
     }
 
     const post = await Post.create({
       userId: req.user.id,
       username: req.user.fullName,
       profilePic: req.user.profilePic || null,
-      campus: (campus && campus.trim()) || '',
+      campus: (campus && campus.trim()) || "",
       content: content.trim(),
       mediaUrl: media,
       hashtags: processedHashtags,
@@ -161,11 +221,11 @@ module.exports.createPost = async function (req, res, next) {
       for (const tag of processedHashtags) {
         const [hashtag, created] = await Hashtag.findOrCreate({
           where: { name: tag },
-          defaults: { postsCount: 1 }
+          defaults: { postsCount: 1 },
         });
 
         if (!created) {
-          await hashtag.increment('postsCount', { by: 1 });
+          await hashtag.increment("postsCount", { by: 1 });
         }
       }
     }
@@ -173,11 +233,11 @@ module.exports.createPost = async function (req, res, next) {
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Post created successfully',
+      message: "Post created successfully",
       data: post,
     });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
 
@@ -189,25 +249,25 @@ module.exports.deletePost = async function (req, res, next) {
 
     if (!post) {
       await t.rollback();
-      return next(CustomError.notFound('Post not found'));
+      return next(CustomError.notFound("Post not found"));
     }
 
     if (post.userId != req.user.id) {
       await t.rollback();
-      return next(CustomError.badRequest('Unauthorized to delete this post'));
+      return next(CustomError.badRequest("Unauthorized to delete this post"));
     }
 
     const comments = await PostComment.findAll({
       where: { postId: post.id },
-      attributes: ['id'],
-      transaction: t
+      attributes: ["id"],
+      transaction: t,
     });
     const commentIds = comments.map((c) => c.id);
 
     if (commentIds.length > 0) {
       await CommentLike.destroy({
         where: { postCommentId: { [Op.in]: commentIds } },
-        transaction: t
+        transaction: t,
       });
     }
 
@@ -216,11 +276,16 @@ module.exports.deletePost = async function (req, res, next) {
 
     const hashtags = Array.isArray(post.hashtags)
       ? post.hashtags
-      : (typeof post.hashtags === 'string' ? JSON.parse(post.hashtags) : []);
+      : typeof post.hashtags === "string"
+        ? JSON.parse(post.hashtags)
+        : [];
 
     if (hashtags.length > 0) {
       for (const tag of hashtags) {
-        const hashtag = await Hashtag.findOne({ where: { name: tag }, transaction: t });
+        const hashtag = await Hashtag.findOne({
+          where: { name: tag },
+          transaction: t,
+        });
         if (hashtag) {
           const newCount = Math.max(0, hashtag.postsCount - 1);
           if (newCount === 0) {
@@ -249,9 +314,8 @@ module.exports.deletePost = async function (req, res, next) {
     return res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Post deleted successfully'
+      message: "Post deleted successfully",
     });
-
   } catch (error) {
     if (!t.finished) {
       await t.rollback();
@@ -263,16 +327,25 @@ module.exports.deletePost = async function (req, res, next) {
 module.exports.likePost = async function (req, res, next) {
   try {
     const post = await Post.findByPk(req.params.id);
-    if (!post) return next(CustomError.notFound('Post not found'));
+    if (!post) return next(CustomError.notFound("Post not found"));
 
-    const existing = await PostLike.findOne({ where: { userId: req.user.id, postId: post.id } });
-    if (existing) return next(CustomError.badRequest('Post already liked'));
+    const existing = await PostLike.findOne({
+      where: { userId: req.user.id, postId: post.id },
+    });
+    if (existing) return next(CustomError.badRequest("Post already liked"));
 
     await PostLike.create({ userId: req.user.id, postId: post.id });
     post.likes += 1;
     await post.save();
 
-    res.status(OK).json({ success: true, status: res.statusCode, message: 'Post liked', data: { likes: post.likes } });
+    res
+      .status(OK)
+      .json({
+        success: true,
+        status: res.statusCode,
+        message: "Post liked",
+        data: { likes: post.likes },
+      });
   } catch (error) {
     return next({ error });
   }
@@ -281,15 +354,24 @@ module.exports.likePost = async function (req, res, next) {
 module.exports.unlikePost = async function (req, res, next) {
   try {
     const post = await Post.findByPk(req.params.id);
-    if (!post) return next(CustomError.notFound('Post not found'));
-    const existing = await PostLike.findOne({ where: { userId: req.user.id, postId: post.id } });
-    if (!existing) return next(CustomError.badRequest('Post not liked yet'));
+    if (!post) return next(CustomError.notFound("Post not found"));
+    const existing = await PostLike.findOne({
+      where: { userId: req.user.id, postId: post.id },
+    });
+    if (!existing) return next(CustomError.badRequest("Post not liked yet"));
 
     await existing.destroy();
     post.likes = Math.max(0, post.likes - 1);
     await post.save();
 
-    res.status(OK).json({ success: true, status: res.statusCode, message: 'Post unliked', data: { likes: post.likes } });
+    res
+      .status(OK)
+      .json({
+        success: true,
+        status: res.statusCode,
+        message: "Post unliked",
+        data: { likes: post.likes },
+      });
   } catch (error) {
     return next({ error });
   }
@@ -298,15 +380,15 @@ module.exports.unlikePost = async function (req, res, next) {
 module.exports.createComment = async function (req, res, next) {
   try {
     const post = await Post.findByPk(req.params.id);
-    if (!post) return next(CustomError.notFound('Post not found'));
+    if (!post) return next(CustomError.notFound("Post not found"));
 
     const schema = new Schema({
-      content: { type: 'string', required: true },
+      content: { type: "string", required: true },
     });
 
     const result = schema.validate(req.body);
     if (result.error) {
-      return next(CustomError.badRequest('Invalid request body', result.error));
+      return next(CustomError.badRequest("Invalid request body", result.error));
     }
 
     const comment = await PostComment.create({
@@ -320,7 +402,7 @@ module.exports.createComment = async function (req, res, next) {
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Comment added successfully',
+      message: "Comment added successfully",
       data: comment,
     });
   } catch (error) {
@@ -331,16 +413,28 @@ module.exports.createComment = async function (req, res, next) {
 module.exports.likeComment = async function (req, res, next) {
   try {
     const comment = await PostComment.findByPk(req.params.id);
-    if (!comment) return next(CustomError.notFound('Comment not found'));
+    if (!comment) return next(CustomError.notFound("Comment not found"));
 
-    const existing = await CommentLike.findOne({ where: { userId: req.user.id, postCommentId: comment.id } });
-    if (existing) return next(CustomError.badRequest('Comment already liked'));
+    const existing = await CommentLike.findOne({
+      where: { userId: req.user.id, postCommentId: comment.id },
+    });
+    if (existing) return next(CustomError.badRequest("Comment already liked"));
 
-    await CommentLike.create({ userId: req.user.id, postCommentId: comment.id });
+    await CommentLike.create({
+      userId: req.user.id,
+      postCommentId: comment.id,
+    });
     comment.likes += 1;
     await comment.save();
 
-    res.status(OK).json({ success: true, status: res.statusCode, message: 'Comment liked', data: { likes: comment.likes } });
+    res
+      .status(OK)
+      .json({
+        success: true,
+        status: res.statusCode,
+        message: "Comment liked",
+        data: { likes: comment.likes },
+      });
   } catch (error) {
     return next({ error });
   }
@@ -349,16 +443,25 @@ module.exports.likeComment = async function (req, res, next) {
 module.exports.unlikeComment = async function (req, res, next) {
   try {
     const comment = await PostComment.findByPk(req.params.id);
-    if (!comment) return next(CustomError.notFound('Comment not found'));
+    if (!comment) return next(CustomError.notFound("Comment not found"));
 
-    const existing = await CommentLike.findOne({ where: { userId: req.user.id, postCommentId: comment.id } });
-    if (!existing) return next(CustomError.badRequest('Comment not liked yet'));
+    const existing = await CommentLike.findOne({
+      where: { userId: req.user.id, postCommentId: comment.id },
+    });
+    if (!existing) return next(CustomError.badRequest("Comment not liked yet"));
 
     await existing.destroy();
     comment.likes = Math.max(0, comment.likes - 1);
     await comment.save();
 
-    res.status(OK).json({ success: true, status: res.statusCode, message: 'Comment unliked', data: { likes: comment.likes } });
+    res
+      .status(OK)
+      .json({
+        success: true,
+        status: res.statusCode,
+        message: "Comment unliked",
+        data: { likes: comment.likes },
+      });
   } catch (error) {
     return next({ error });
   }
@@ -366,15 +469,23 @@ module.exports.unlikeComment = async function (req, res, next) {
 
 module.exports.getComments = async function (req, res, next) {
   try {
-    const comments = await PostComment.findAll({ where: { postId: req.params.id }, order: [['createdAt', 'ASC']] });
+    const comments = await PostComment.findAll({
+      where: { postId: req.params.id },
+      order: [["createdAt", "ASC"]],
+    });
     const userId = req.user.id;
 
     let commentsWithLike = comments;
     if (userId) {
       const commentIds = comments.map((c) => c.id);
-      const likes = await CommentLike.findAll({ where: { userId, postCommentId: { [Op.in]: commentIds } } });
+      const likes = await CommentLike.findAll({
+        where: { userId, postCommentId: { [Op.in]: commentIds } },
+      });
       const likedSet = new Set(likes.map((l) => l.postCommentId));
-      commentsWithLike = comments.map((c) => ({ ...c.toJSON(), liked: likedSet.has(c.id) }));
+      commentsWithLike = comments.map((c) => ({
+        ...c.toJSON(),
+        liked: likedSet.has(c.id),
+      }));
     } else {
       commentsWithLike = comments.map((c) => ({ ...c.toJSON(), liked: false }));
     }
@@ -382,7 +493,7 @@ module.exports.getComments = async function (req, res, next) {
     res.status(OK).json({
       success: true,
       status: res.statusCode,
-      message: 'Comments fetched successfully',
+      message: "Comments fetched successfully",
       data: commentsWithLike,
     });
   } catch (error) {

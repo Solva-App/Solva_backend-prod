@@ -23,7 +23,7 @@ const postSchema = {
     allowNull: false
   },
   mediaUrl: {
-    type: DataTypes.TEXT,
+    type: DataTypes.JSON(DataTypes.TEXT),
     allowNull: true
   },
   views: {

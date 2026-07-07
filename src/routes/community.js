@@ -10,7 +10,7 @@ router.delete('/posts/:id', controllers.deletePost);
 router.get('/hashtags', controllers.getHashtags);
 router.get('/hashtags/trending', controllers.getTrendingHashtags);
 router.get('/hashtags/:name', controllers.getHashtag);
-router.post('/posts', fileParser.single('media'), controllers.createPost);
+router.post('/posts', fileParser.array('media', 10), controllers.createPost);
 router.post('/posts/:id/like', controllers.likePost);
 router.delete('/posts/:id/like', controllers.unlikePost);
 router.get('/posts/:id/comments', controllers.getComments);
