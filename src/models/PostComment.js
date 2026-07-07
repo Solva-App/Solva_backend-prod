@@ -25,6 +25,10 @@ const postCommentSchema = {
   likes: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  parentId: {
+    type: DataTypes.UUID,
+    allowNull: true,
   }
 }
 

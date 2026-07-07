@@ -12,8 +12,34 @@ const firebase = require("../helpers/firebase");
 const { sequelize } = require("../database/db");
 const image = require('./../helpers/image')
 
+function buildCommentTree(flatComments) {
+  const commentMap = {};
+  const commentTree = [];
+
+  flatComments.forEach(comment => {
+    commentMap[comment.id] = { ...comment, replies: [] };
+  });
+
+  flatComments.forEach(comment => {
+    const mappedComment = commentMap[comment.id];
+
+    if (comment.parentId) {
+      if (commentMap[comment.parentId]) {
+        commentMap[comment.parentId].replies.push(mappedComment);
+      } else {
+        commentTree.push(mappedComment);
+      }
+    } else {
+      commentTree.push(mappedComment);
+    }
+  });
+
+  return commentTree;
+}
+
 module.exports.getPosts = async function (req, res, next) {
   try {
+    console.log(req.user, 'lll')
     const queryConditions = {};
     if (req.query.search) {
       queryConditions.content = { [Op.like]: `%${req.query.search}%` };
@@ -384,6 +410,7 @@ module.exports.createComment = async function (req, res, next) {
 
     const schema = new Schema({
       content: { type: "string", required: true },
+      parentId: { type: "string", required: false },
     });
 
     const result = schema.validate(req.body);
@@ -393,6 +420,7 @@ module.exports.createComment = async function (req, res, next) {
 
     const comment = await PostComment.create({
       content: result.data.content.trim(),
+      parentId: result.data.parentId || null,
       userId: req.user.id,
       username: req.user.fullName,
       profilePic: req.user.profilePic || null,
@@ -406,7 +434,7 @@ module.exports.createComment = async function (req, res, next) {
       data: comment,
     });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
 
@@ -424,19 +452,18 @@ module.exports.likeComment = async function (req, res, next) {
       userId: req.user.id,
       postCommentId: comment.id,
     });
-    comment.likes += 1;
-    await comment.save();
 
-    res
-      .status(OK)
-      .json({
-        success: true,
-        status: res.statusCode,
-        message: "Comment liked",
-        data: { likes: comment.likes },
-      });
+    await comment.increment('likes', { by: 1 });
+    await comment.reload();
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Comment liked",
+      data: { likes: comment.likes },
+    });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
 
@@ -451,19 +478,20 @@ module.exports.unlikeComment = async function (req, res, next) {
     if (!existing) return next(CustomError.badRequest("Comment not liked yet"));
 
     await existing.destroy();
-    comment.likes = Math.max(0, comment.likes - 1);
-    await comment.save();
 
-    res
-      .status(OK)
-      .json({
-        success: true,
-        status: res.statusCode,
-        message: "Comment unliked",
-        data: { likes: comment.likes },
-      });
+    if (comment.likes > 0) {
+      await comment.decrement('likes', { by: 1 });
+      await comment.reload();
+    }
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: "Comment unliked",
+      data: { likes: comment.likes },
+    });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
 
@@ -490,13 +518,15 @@ module.exports.getComments = async function (req, res, next) {
       commentsWithLike = comments.map((c) => ({ ...c.toJSON(), liked: false }));
     }
 
+    const commentTree = buildCommentTree(commentsWithLike);
+
     res.status(OK).json({
       success: true,
       status: res.statusCode,
       message: "Comments fetched successfully",
-      data: commentsWithLike,
+      data: commentTree,
     });
   } catch (error) {
-    return next({ error });
+    return next(error);
   }
 };
