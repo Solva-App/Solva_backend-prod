@@ -10,8 +10,8 @@ router.get('/', controllers.getAllCourses);
 router.get('/:id', controllers.getCourseById);
 
 router.use(isAdmin)
-router.post('/', fileParser.single('profilePic'), controllers.createCourse);
-router.patch('/:id', fileParser.single('profilePic'), controllers.updateCourse);
+router.post('/', fileParser.single('thumbnail'), controllers.createCourse);
+router.patch('/:id', fileParser.single('thumbnail'), controllers.updateCourse);
 router.delete('/:id', controllers.deleteCourse);
 
 module.exports = router;
