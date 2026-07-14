@@ -1,11 +1,27 @@
 const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
-const { STRING, INTEGER, FLOAT, BOOLEAN } = DataTypes
+const { STRING, INTEGER, FLOAT, BOOLEAN, ENUM } = DataTypes
 
 const courseSchema = {
   name: {
     type: STRING,
     allowNull: false,
+  },
+  category: {
+    type: STRING,
+    allowNull: false,
+  },
+  difficulty: {
+    type: STRING,
+    allowNull: false,
+  },
+  description: {
+    type: STRING,
+    allowNull: false,
+  },
+  status: {
+    type: ENUM('draft', 'published'),
+    defaultValue: 'draft'
   },
   duration: {
     type: STRING,
@@ -15,13 +31,25 @@ const courseSchema = {
     type: BOOLEAN,
     defaultValue: true,
   },
-  cost: {
+  price: {
     type: FLOAT,
     allowNull: true,
   },
-  link: {
+  discountPrice: {
+    type: FLOAT,
+    allowNull: true,
+  },
+  thumbnail: {
     type: STRING,
     allowNull: true,
+  },
+  hasCertificate: {
+    type: BOOLEAN,
+    defaultValue: false,
+  },
+  link: {
+    type: STRING,
+    allowNull: false,
   }
 }
 

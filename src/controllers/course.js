@@ -7,29 +7,62 @@ module.exports.createCourse = async function (req, res, next) {
   try {
     const schema = new Schema({
       name: { type: "string", required: true },
+      category: { type: "string", required: true },
+      difficulty: { type: "string", required: true },
+      description: { type: "string", required: true },
+      link: { type: "string", required: true },
       duration: { type: "string", required: false },
       isFree: { type: "boolean", required: false },
-      cost: { type: "number", required: false },
-      link: { type: "string", required: false },
+      price: { type: "number", required: false },
+      discountPrice: { type: "number", required: false },
+      status: { type: "string", required: false, enum: ["draft", "published"] },
+      hasCertificate: { type: "boolean", required: true },
     });
 
-    const result = schema.validate(req.body);
+    req.body.thumbnail = null;
+    let { body } = req;
+    let files = { thumbnail: [] };
+
+    if (req.files && req.files.length > 0) {
+      for (let file of req.files) {
+        if (file.fieldname === 'thumbnail') {
+          files[file.fieldname].push(
+            await image.modifyStringImageFile(body['thumbnail']?.length ? body[file.fieldname] : file)
+          );
+        }
+      }
+    }
+
+    const result = schema.validate({ ...body, ...files });
     if (result.error) {
       return next(CustomError.badRequest("Invalid Request Body", result.error));
     }
 
-    const body = result.data;
+    const data = result.data;
 
-    if (!body.isFree && !body.cost) {
-      return next(CustomError.badRequest("Cost is required for paid courses"));
+    if (!data.isFree && !data.price) {
+      return next(CustomError.badRequest("price is required for paid courses"));
+    }
+
+    let thumbnailUrl = null;
+    if (files.thumbnail.length > 0) {
+      const upload = await firebase.fileUpload(files.thumbnail[0], 'courses');
+      if (upload instanceof CustomError) return next(upload);
+      thumbnailUrl = upload;
     }
 
     const course = await Course.create({
-      name: body.name,
-      duration: body.duration || null,
-      isFree: body.isFree !== undefined ? body.isFree : true,
-      cost: body.isFree ? null : body.cost,
-      link: body.link || null
+      name: data.name,
+      category: data.category,
+      difficulty: data.difficulty,
+      description: data.description,
+      link: data.link,
+      duration: data.duration || null,
+      isFree: data.isFree !== undefined ? data.isFree : true,
+      price: data.isFree ? null : data.price,
+      discountPrice: data.discountPrice || 0,
+      thumbnail: thumbnailUrl,
+      status: data.status || 'draft'
     });
 
     res.status(StatusCodes.CREATED).json({
@@ -38,8 +71,7 @@ module.exports.createCourse = async function (req, res, next) {
       data: course
     });
   } catch (error) {
-    console.error('Course Controller Error:', error);
-    return next(CustomError.internalServerError("Server error creating course", error));
+    return next(error);
   }
 };
 
@@ -75,35 +107,74 @@ module.exports.updateCourse = async function (req, res, next) {
   try {
     const schema = new Schema({
       name: { type: "string", required: false },
+      category: { type: "string", required: false },
+      difficulty: { type: "string", required: false },
+      description: { type: "string", required: false },
+      link: { type: "string", required: false },
       duration: { type: "string", required: false },
       isFree: { type: "boolean", required: false },
-      cost: { type: "number", required: false },
-      link: { type: "string", required: false },
+      price: { type: "number", required: false },
+      discountPrice: { type: "number", required: false },
+      status: { type: "string", required: false, enum: ["draft", "published"] },
+      hasCertificate: { type: "boolean", required: true },
     });
 
-    const result = schema.validate(req.body);
+    let { body } = req;
+    let files = { thumbnail: [] };
+
+    if (req.files && req.files.length > 0) {
+      for (let file of req.files) {
+        if (file.fieldname === 'thumbnail') {
+          files[file.fieldname].push(
+            await image.modifyStringImageFile(file)
+          );
+        }
+      }
+    }
+
+    const result = schema.validate({ ...body, ...files });
     if (result.error) {
       return next(CustomError.badRequest("Invalid Request Body", result.error));
     }
 
-    const body = result.data;
+    const data = result.data;
     const course = await Course.findByPk(req.params.id);
 
     if (!course) {
       return next(CustomError.notFound("Course not found"));
     }
 
-    const isFreeValue = body.isFree !== undefined ? body.isFree : course.isFree;
-    if (!isFreeValue && !body.cost && !course.cost) {
-      return next(CustomError.badRequest("Cost is required for paid courses"));
+    const isFreeValue = data.isFree !== undefined ? data.isFree : course.isFree;
+    if (!isFreeValue && !data.price && !course.price) {
+      return next(CustomError.badRequest("price is required for paid courses"));
+    }
+
+    let thumbnailUrl = course.thumbnail;
+    if (files.thumbnail.length > 0) {
+      if (course.thumbnail) {
+        try {
+          await firebase.deleteFile(course.thumbnail);
+        } catch (err) {
+          console.error("Failed to delete old course thumbnail:", err);
+        }
+      }
+      const upload = await firebase.fileUpload(files.thumbnail[0], 'courses');
+      if (upload instanceof CustomError) return next(upload);
+      thumbnailUrl = upload;
     }
 
     await course.update({
-      name: body.name || course.name,
-      duration: body.duration !== undefined ? body.duration : course.duration,
+      name: data.name || course.name,
+      category: data.category || course.category,
+      difficulty: data.difficulty || course.difficulty,
+      description: data.description || course.description,
+      link: data.link || course.link,
+      duration: data.duration !== undefined ? data.duration : course.duration,
       isFree: isFreeValue,
-      cost: isFreeValue ? null : (body.cost || course.cost),
-      link: body.link !== undefined ? body.link : course.link
+      price: isFreeValue ? null : (data.price || course.price),
+      discountPrice: data.discountPrice !== undefined ? data.discountPrice : course.discountPrice,
+      status: data.status || course.status,
+      thumbnail: thumbnailUrl
     });
 
     res.status(StatusCodes.OK).json({
@@ -112,8 +183,7 @@ module.exports.updateCourse = async function (req, res, next) {
       data: course
     });
   } catch (error) {
-    console.error('Course Controller Error:', error);
-    return next(CustomError.internalServerError("Server error updating course", error));
+    return next(error);
   }
 };
 
@@ -125,14 +195,23 @@ module.exports.deleteCourse = async function (req, res, next) {
       return next(CustomError.notFound("Course not found"));
     }
 
+    const thumbnailToClear = course.thumbnail;
+
     await course.destroy();
+    if (thumbnailToClear) {
+      try {
+        await firebase.deleteFile(thumbnailToClear);
+      } catch (firebaseError) {
+        console.error("Failed to delete course thumbnail from Firebase:", firebaseError);
+      }
+    }
 
     res.status(StatusCodes.OK).json({
       success: true,
-      message: "Course deleted successfully"
+      status: res.statusCode,
+      message: "Course and its associated media deleted successfully"
     });
   } catch (error) {
-    console.error('Course Controller Error:', error);
-    return next(CustomError.internalServerError("Server error deleting course", error));
+    return next(error);
   }
 };
