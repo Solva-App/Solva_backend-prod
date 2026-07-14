@@ -249,11 +249,11 @@ module.exports.deleteTask = async function (req, res, next) {
     }
 
     if (task.sponsorLogo) {
-      await firebase.fileDelete(task.sponsorLogo)
+      await firebase.deleteFile(task.sponsorLogo)
     }
 
     if (task.bannerImage) {
-      await firebase.fileDelete(task.bannerImage)
+      await firebase.deleteFile(task.bannerImage)
     }
 
     await task.destroy()

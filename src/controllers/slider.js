@@ -90,7 +90,7 @@ module.exports.deleteSlide = async function (req, res, next) {
         }
 
         if (slide.url) {
-            await firebase.fileDelete(slide.url)
+            await firebase.deleteFile(slide.url)
         }
 
         await Slide.destroy({ where: { id: req.params.id } })

@@ -306,7 +306,7 @@ module.exports.updateProfile = async function (req, res, next) {
     if (file) {
       if (req.user.profilePic) {
         try {
-          await firebase.fileDelete(req.user.profilePic);
+          await firebase.deleteFile(req.user.profilePic);
         } catch (deleteError) {
           console.error("Failed to delete old profile picture:", deleteError);
         }
