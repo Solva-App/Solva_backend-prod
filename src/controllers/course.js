@@ -16,6 +16,7 @@ module.exports.createCourse = async function (req, res, next) {
       price: { type: "number", required: false },
       discountPrice: { type: "number", required: false },
       status: { type: "string", required: false, enum: ["draft", "published"] },
+      thumbnail: { type: "string", required: false },
       hasCertificate: { type: "boolean", required: true },
     });
 
@@ -77,7 +78,14 @@ module.exports.createCourse = async function (req, res, next) {
 
 module.exports.getAllCourses = async function (req, res, next) {
   try {
+    const queryConditions = {};
+
+    if (req.user.category !== 'admin') {
+      queryConditions.status = 'published';
+    }
+
     const courses = await Course.findAll({
+      where: queryConditions,
       order: [['createdAt', 'DESC']]
     });
 
@@ -90,7 +98,13 @@ module.exports.getAllCourses = async function (req, res, next) {
 
 module.exports.getCourseById = async function (req, res, next) {
   try {
-    const course = await Course.findByPk(req.params.id);
+    const queryConditions = { id: req.params.id };
+
+    if (req.user.category !== 'admin') {
+      queryConditions.status = 'published';
+    }
+
+    const course = await Course.findOne({ where: queryConditions });
 
     if (!course) {
       return next(CustomError.notFound("Course not found"));
@@ -116,6 +130,7 @@ module.exports.updateCourse = async function (req, res, next) {
       price: { type: "number", required: false },
       discountPrice: { type: "number", required: false },
       status: { type: "string", required: false, enum: ["draft", "published"] },
+      thumbnail: { type: "string", required: false },
       hasCertificate: { type: "boolean", required: true },
     });
 
