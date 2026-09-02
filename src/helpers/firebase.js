@@ -17,7 +17,7 @@ async function ensureAuth() {
   }
 }
 
-module.fileUpload = async function (file, location) {
+module.exports.fileUpload = async function (file, location) {
   try {
     await ensureAuth();
     const metadata = { contentType: file.mimetype }
@@ -30,11 +30,10 @@ module.fileUpload = async function (file, location) {
   }
 }
 
-module.deleteFile = async function (fileUrlOrPath) {
+module.exports.deleteFile = async function (fileUrlOrPath) {
   try {
     await ensureAuth();
     const fileRef = storage.ref(bucket, fileUrlOrPath);
-
     await storage.deleteObject(fileRef);
     return true;
   } catch (error) {
