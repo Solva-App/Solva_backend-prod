@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@firebase/app": "^0.9.29",
+    "@firebase/auth": "^1.13.5",
     "@firebase/storage": "^0.12.2",
     "@huggingface/inference": "^4.4.0",
     "axios": "^1.7.7",

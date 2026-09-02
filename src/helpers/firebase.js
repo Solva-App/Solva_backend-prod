@@ -1,5 +1,6 @@
 const storage = require('@firebase/storage')
 const app = require('@firebase/app')
+const auth = require('@firebase/auth')
 const firebaseKeys = require('../../firebaseConfig')
 const CustomError = require('./error')
 
@@ -9,8 +10,16 @@ const firebaseApp = app.initializeApp(firebaseKeys.storage)
 // Initialize Storage instance
 const bucket = storage.getStorage(firebaseApp)
 
-module.exports.fileUpload = async function (file, location) {
+async function ensureAuth() {
+  const authInstance = auth.getAuth(firebaseApp);
+  if (!authInstance.currentUser) {
+    await auth.signInAnonymously(authInstance);
+  }
+}
+
+module.fileUpload = async function (file, location) {
   try {
+    await ensureAuth();
     const metadata = { contentType: file.mimetype }
     const ref = storage.ref(bucket, `${location}/${Math.round(Math.random() * 1e9)}-${file.originalname}`)
     const snapshot = await storage.uploadBytes(ref, file.buffer, metadata)
@@ -21,8 +30,9 @@ module.exports.fileUpload = async function (file, location) {
   }
 }
 
-module.exports.deleteFile = async function (fileUrlOrPath) {
+module.deleteFile = async function (fileUrlOrPath) {
   try {
+    await ensureAuth();
     const fileRef = storage.ref(bucket, fileUrlOrPath);
 
     await storage.deleteObject(fileRef);
