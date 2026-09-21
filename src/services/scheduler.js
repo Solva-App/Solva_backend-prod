@@ -5,7 +5,7 @@ const User = require('../models/User')
 const { formatDate } = require('./../helpers/time')
 const Token = require('../models/Token')
 const Task = require('../models/Task')
-const { Op } = require('sequelize');
+const { Op } = require('sequelize')
 
 const initiateCharge = function (user) {
   return async () => {
@@ -40,7 +40,7 @@ const initiateCharge = function (user) {
   }
 }
 
-module.exports.initiateSubscriptionScheduler = async function (user) {
+const initiateSubscriptionScheduler = async function (user) {
   if (!user || !user.lastSubscriptionExpiresAt) return
 
   const jobName = `subscription_job_${user.id}`
@@ -62,6 +62,7 @@ module.exports.initiateSubscriptionScheduler = async function (user) {
       console.error(`Error executing subscription task for user ${user.id}:`, error)
     }
   }
+
   if (expirationDate <= new Date()) {
     console.log(`Expiration date passed for user ${user.id}. Processing action immediately.`)
     await executeAction()
@@ -71,14 +72,18 @@ module.exports.initiateSubscriptionScheduler = async function (user) {
   schedule.scheduleJob(jobName, expirationDate, executeAction)
 }
 
-module.exports.initiateAllSubscriptionScheduler = async function () {
+const initiateAllSubscriptionScheduler = async function () {
   try {
     console.log('Initializing subscription schedulers for all users...')
+
     const users = await User.findAll({
       where: {
         [Op.or]: [
           { autoCharge: true },
-          { lastSubscriptionExpiresAt: { [Op.lte]: new Date() } }
+          {
+            lastSubscriptionExpiresAt: { [Op.lte]: new Date() },
+            category: { [Op.ne]: 'user' }
+          }
         ]
       },
     })
@@ -92,7 +97,7 @@ module.exports.initiateAllSubscriptionScheduler = async function () {
   }
 }
 
-module.exports.stopAutoCharge = async function (user) {
+const stopAutoCharge = async function (user) {
   user.autoCharge = false
   await user.save()
 
@@ -101,43 +106,51 @@ module.exports.stopAutoCharge = async function (user) {
   console.log(`Auto Charge deactivated successfully for user ${user.id}`)
 }
 
-module.exports.updateTaskStatuses = async function () {
+const updateTaskStatuses = async function () {
   try {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const now = new Date()
 
     const [activeUpdatedCount] = await Task.update(
       { status: 'active' },
       {
         where: {
-          startDate: { [Op.lte]: todayStr },
-          endDate: { [Op.gte]: todayStr },
-          status: { [Op.not]: 'active' } // Only update if status is not already active
+          startDate: { [Op.lte]: now },
+          endDate: { [Op.gte]: now },
+          status: { [Op.not]: 'active' }
         }
       }
-    );
+    )
 
     const [endedUpdatedCount] = await Task.update(
       { status: 'ended' },
       {
         where: {
-          endDate: { [Op.lt]: todayStr },
-          status: { [Op.not]: 'ended' } // Only update if status is not already ended
+          endDate: { [Op.lt]: now },
+          status: { [Op.not]: 'ended' }
         }
       }
-    );
+    )
 
     console.log(
-      `[${new Date().toISOString()}] Task status update completed. Active updated: ${activeUpdatedCount}, Ended updated: ${endedUpdatedCount}`
-    );
+      `[${now.toISOString()}] Task status update completed. Active updated: ${activeUpdatedCount}, Ended updated: ${endedUpdatedCount}`
+    )
   } catch (error) {
-    console.error('Error updating task statuses:', error);
+    console.error('Error updating task statuses:', error)
   }
-};
+}
 
-module.exports.scheduleDailyTaskUpdate = function () {
+const scheduleDailyTaskUpdate = function () {
   schedule.scheduleJob('0 6 * * *', () => {
-    console.log('Running daily task status check...');
-    module.exports.updateTaskStatuses();
-  });
-};
+    console.log('Running daily task status check...')
+    updateTaskStatuses()
+  })
+}
+
+module.exports = {
+  initiateCharge,
+  initiateSubscriptionScheduler,
+  initiateAllSubscriptionScheduler,
+  stopAutoCharge,
+  updateTaskStatuses,
+  scheduleDailyTaskUpdate
+}
