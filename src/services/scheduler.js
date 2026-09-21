@@ -8,104 +8,132 @@ const Task = require('../models/Task')
 const { Op } = require('sequelize');
 
 const initiateCharge = function (user) {
-    console.log(`Charge will be initiated ${formatDate(user.lastSubscriptionExpiresAt)}`, user.email)
-    return async () => {
-        // console.log('charge in progress')
-        const amount = user.lastSubscriptionPlan === 'Premium' ? 999 : 0
-        // initiate the charge
-        const charge = await paystack.chargeCard({
-            email: user.email,
-            amount: amount,
-            authorization_code: user.chargeAuthCode,
-            metadata: {
-                id: user.id,
-                type: user.lastSubscriptionPlan,
-            },
-        })
+  if (user.lastSubscriptionPlan !== 'premium') {
+    console.log(`Skipping charge for user ${user.id}: Plan is ${user.lastSubscriptionPlan}`)
+    return user
+  }
 
-        if (charge instanceof CustomError) {
-            user.willChargeAgain = false
-        }
+  const amount = 999
 
-        return await user.save()
+  try {
+    console.log(`Initiating charge of ${amount} for ${user.email}`)
+
+    const charge = await paystack.chargeCard({
+      email: user.email,
+      amount: amount,
+      authorization_code: user.chargeAuthCode,
+      metadata: {
+        id: user.id,
+        type: user.lastSubscriptionPlan,
+      },
+    })
+
+    if (charge instanceof CustomError) {
+      user.willChargeAgain = false
     }
+
+    return await user.save()
+  } catch (error) {
+    console.error(`Error processing charge for user ${user.id}:`, error)
+  }
 }
 
 module.exports.initiateSubscriptionScheduler = async function (user) {
-    if (user.chargeChannel !== 'card') {
-        schedule.scheduleJob(user.lastSubscriptionExpiresAt, async () => {
-            user.category = 'user'
-            await user.save()
-        })
-    } else {
-        schedule.scheduleJob(user.chargeAuthCode, user.lastSubscriptionExpiresAt, initiateCharge(user))
+  if (!user || !user.lastSubscriptionExpiresAt) return
+
+  const jobName = `subscription_job_${user.id}`
+  const expirationDate = new Date(user.lastSubscriptionExpiresAt)
+
+  schedule.cancelJob(jobName)
+
+  const executeAction = async () => {
+    try {
+      if (user.chargeChannel === 'card') {
+        const chargeFn = initiateCharge(user)
+        await chargeFn()
+      } else {
+        user.category = 'user'
+        await user.save()
+      }
+    } catch (error) {
+      console.error(`Error executing subscription task for user ${user.id}:`, error)
     }
+    if (expirationDate <= new Date()) {
+      console.log(`Expiration date passed for user ${user.id}. Processing action immediately.`)
+      await executeAction()
+      return
+    }
+
+    schedule.scheduleJob(jobName, expirationDate, executeAction)
+  }
 }
 
 module.exports.initiateAllSubscriptionScheduler = async function () {
+  try {
     const users = await User.findAll({
-        where: {
-            autoCharge: true,
-        },
+      where: {
+        autoCharge: true,
+      },
     })
 
-    // initiate all user charge
-    users.forEach((user) => {
-        if (user.chargeChannel !== 'card') {
-            schedule.scheduleJob(user.lastSubscriptionExpiresAt, async () => {
-                user.category = 'user'
-                await user.save()
-            })
-        } else {
-            schedule.scheduleJob(user.chargeAuthCode, user.lastSubscriptionExpiresAt, initiateCharge(user))
-        }
-    })
+    for (const user of users) {
+      await initiateSubscriptionScheduler(user)
+    }
+  } catch (error) {
+    console.error('Failed to initialize all subscription schedulers:', error)
+  }
 }
 
 module.exports.stopAutoCharge = async function (user) {
-    console.log('Auto Charge Disactivated Successfully')
-    user.autoCharge = false
-    await user.save()
-    if (user.chargeChannel === 'card') return schedule.cancelJob(user.chargeAuthCode)
+  user.autoCharge = false
+  await user.save()
+
+  const jobName = `subscription_job_${user.id}`
+  const canceled = schedule.cancelJob(jobName)
+
+  if (canceled) {
+    console.log(`Auto-charge scheduled job canceled for user ${user.id}`)
+  }
+  console.log(`Auto Charge deactivated successfully for user ${user.id}`)
 }
 
 module.exports.updateTaskStatuses = async function () {
-    try {
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+  try {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
-        const [activeUpdatedCount] = await Task.update(
-            { status: 'active' },
-            {
-                where: {
-                    startDate: { [Op.lte]: todayStr },
-                    endDate: { [Op.gte]: todayStr },
-                    status: { [Op.not]: 'active' } // Only update if status is not already active
-                }
-            }
-        );
+    const [activeUpdatedCount] = await Task.update(
+      { status: 'active' },
+      {
+        where: {
+          startDate: { [Op.lte]: todayStr },
+          endDate: { [Op.gte]: todayStr },
+          status: { [Op.not]: 'active' } // Only update if status is not already active
+        }
+      }
+    );
 
-        const [endedUpdatedCount] = await Task.update(
-            { status: 'ended' },
-            {
-                where: {
-                    endDate: { [Op.lt]: todayStr },
-                    status: { [Op.not]: 'ended' } // Only update if status is not already ended
-                }
-            }
-        );
+    const [endedUpdatedCount] = await Task.update(
+      { status: 'ended' },
+      {
+        where: {
+          endDate: { [Op.lt]: todayStr },
+          status: { [Op.not]: 'ended' } // Only update if status is not already ended
+        }
+      }
+    );
 
-        console.log(
-            `[${new Date().toISOString()}] Task status update completed. Active updated: ${activeUpdatedCount}, Ended updated: ${endedUpdatedCount}`
-        );
-    } catch (error) {
-        console.error('Error updating task statuses:', error);
-    }
+    console.log(
+      `[${new Date().toISOString()}] Task status update completed. Active updated: ${activeUpdatedCount}, Ended updated: ${endedUpdatedCount}`
+    );
+  } catch (error) {
+    console.error('Error updating task statuses:', error);
+  }
 };
 
 module.exports.scheduleDailyTaskUpdate = function () {
-    schedule.scheduleJob('0 6 * * *', () => {
-        console.log('Running daily task status check...');
-        module.exports.updateTaskStatuses();
-    });
+  schedule.scheduleJob('0 6 * * *', () => {
+    console.log('Running daily task status check...');
+    module.exports.updateTaskStatuses();
+  });
 };
