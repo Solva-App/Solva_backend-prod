@@ -21,7 +21,7 @@ const initiateCharge = function (user) {
 
       const charge = await paystack.chargeCard({
         email: user.email,
-        amount: amount,
+        amount: amount * 100,
         authorization_code: user.chargeAuthCode,
         metadata: {
           id: user.id,
