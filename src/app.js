@@ -62,6 +62,7 @@ const flashcardRoutes = require("./routes/flashcard");
 const lessonRoutes = require("./routes/lesson");
 const communityRoutes = require("./routes/community");
 const courseRoutes = require("./routes/course");
+const huntRoutes = require("./routes/hunt");
 // end of routes
 
 // create a baseurl field containing the request http protocol & url) in the request object
@@ -94,6 +95,7 @@ app.use("/api/v1/flashcard", flashcardRoutes);
 app.use("/api/v1/lesson", lessonRoutes);
 app.use("/api/v1/community", communityRoutes);
 app.use("/api/v1/courses", courseRoutes);
+app.use("/api/v1/hunt", huntRoutes);
 
 require("./helpers/socket")(io);
 initNotificationIO(io);
