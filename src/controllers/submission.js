@@ -273,3 +273,177 @@ module.exports.getSubmission = async function (req, res, next) {
     return next({ error })
   }
 }
+
+module.exports.getCompanyTaskSubmissions = async function (req, res, next) {
+  try {
+    const task = await Task.findByPk(req.params.taskId)
+
+    if (!task) {
+      return next(CustomError.notFound('Task not found'))
+    }
+
+    if (task.owner !== req.user.id) {
+      return next(CustomError.forbidden('You can only view submissions for tasks created by your company'))
+    }
+
+    const submissions = await Submission.findAll({
+      where: {
+        taskId: req.params.taskId,
+        status: { [Op.or]: ['pending', 'approved'] },
+      },
+      order: [['createdAt', 'DESC']],
+    })
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      data: submissions,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.approveCompanyTaskSubmission = async function (req, res, next) {
+  try {
+    const submission = await Submission.findOne({
+      where: { id: req.params.id, status: 'pending' },
+    })
+
+    if (!submission) {
+      return next(CustomError.badRequest('Submission not found or already processed'))
+    }
+
+    const task = await Task.findByPk(submission.taskId)
+    if (!task) return next(CustomError.notFound('Associated task not found'))
+
+    if (task.owner !== req.user.id) {
+      return next(CustomError.forbidden('You can only approve submissions for tasks created by your company'))
+    }
+
+    const user = await User.findByPk(submission.userId)
+    if (!user) return next(CustomError.notFound('User not found'))
+
+    const alreadyPaid = await Submission.findOne({
+      where: { userId: user.id, taskId: task.id, status: 'approved', isPaid: true },
+    })
+
+    if (!alreadyPaid) {
+      const paymentAmount = Number(task.totalPool) / Number(task.totalSpots)
+      await user.increment('balance', { by: paymentAmount })
+      submission.isPaid = true
+    }
+
+    submission.status = 'approved'
+    await submission.save()
+
+    const templatePath = path.join(__dirname, '../templates/default_email.handlebars')
+    if (fs.existsSync(templatePath)) {
+      const defaultContent = fs.readFileSync(templatePath, 'utf8')
+      const compileTemplate = handlebars.compile(defaultContent)
+      const template = compileTemplate({
+        fullName: user.fullName,
+        email: user.email,
+        message: 'Your task submission has been approved',
+      })
+      await sendEmail(user.email, 'Task Submission Approved', template)
+    }
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Company task submission approved successfully',
+      data: submission,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.rejectCompanyTaskSubmission = async function (req, res, next) {
+  try {
+    const submission = await Submission.findOne({
+      where: { id: req.params.id, status: 'pending' },
+    })
+
+    if (!submission) {
+      return next(CustomError.badRequest('Submission not found or already processed'))
+    }
+
+    const task = await Task.findByPk(submission.taskId)
+    if (!task) return next(CustomError.notFound('Associated task not found'))
+
+    if (task.owner !== req.user.id) {
+      return next(CustomError.forbidden('You can only reject submissions for tasks created by your company'))
+    }
+
+    const user = await User.findByPk(submission.userId)
+    if (!user) return next(CustomError.notFound('User not found'))
+
+    submission.status = 'rejected'
+    await submission.save()
+
+    const otherActiveSubmissions = await Submission.count({
+      where: {
+        userId: submission.userId,
+        taskId: submission.taskId,
+        status: { [Op.or]: ['pending', 'approved'] },
+      },
+    })
+
+    if (otherActiveSubmissions === 0 && task.usedSpots > 0) {
+      await task.decrement('usedSpots', { by: 1 })
+    }
+
+    const templatePath = path.join(__dirname, '../templates/default_email.handlebars')
+    if (fs.existsSync(templatePath)) {
+      const defaultContent = fs.readFileSync(templatePath, 'utf8')
+      const compileTemplate = handlebars.compile(defaultContent)
+      const template = compileTemplate({
+        fullName: user.fullName,
+        email: user.email,
+        message: 'Your task submission has been rejected',
+      })
+      await sendEmail(user.email, 'Task Submission Rejected', template)
+    }
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Company task submission rejected successfully',
+      data: submission,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.getCompanyTaskSubmission = async function (req, res, next) {
+  try {
+    const submission = await Submission.findByPk(req.params.id)
+
+    if (!submission) {
+      return next(CustomError.notFound('Submission not found'))
+    }
+
+    const task = await Task.findByPk(submission.taskId)
+
+    if (!task) {
+      return next(CustomError.notFound('Associated task not found'))
+    }
+
+    if (task.owner !== req.user.id) {
+      return next(
+        CustomError.forbidden('You can only view submissions for tasks created by your company')
+      )
+    }
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      data: submission,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
