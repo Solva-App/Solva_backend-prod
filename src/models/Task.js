@@ -2,6 +2,10 @@ const { DataTypes } = require('sequelize')
 const { sequelize } = require('../database/db')
 
 const taskSchema = {
+  owner: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -68,7 +72,8 @@ const taskSchema = {
     defaultValue: 0,
   },
   status: {
-    type: DataTypes.ENUM('upcoming', 'active', 'ended'),
+    type: DataTypes.ENUM('draft', 'upcoming', 'active', 'ended'),
+    defaultValue: 'draft',
   }
 }
 

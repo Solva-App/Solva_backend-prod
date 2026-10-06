@@ -10,6 +10,7 @@ const { sendEmail } = require("../helpers/resend");
 const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
+const paystack = require('../http/paystack')
 
 module.exports.createTask = async function (req, res, next) {
   try {
@@ -298,126 +299,301 @@ module.exports.getTask = async function (req, res, next) {
   }
 }
 
-// module.exports.checkTaskReviewStatus = async function (req, res, next) {
-//   try {
-//     const { id } = req.params;
+module.exports.createCompanyTaskDraft = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      title: { type: 'string', required: true },
+      overview: { type: 'string', required: true },
+      type: { type: 'string', required: true },
+      sponsorName: { type: 'string', required: true },
+      sponsorLogo: { type: 'string', required: false },
+      bannerImage: { type: 'string', required: false },
+      requirements: { type: 'array', required: true },
+      guidelines: { type: 'array', required: true },
+      selectionCriteria: { type: 'array', required: true },
+      howToSubmit: { type: 'array', required: true },
+      startDate: { type: 'string', format: 'date-time', required: true },
+      endDate: { type: 'string', format: 'date-time', required: true },
+      totalPool: { type: 'number', required: true },
+      totalSpots: { type: 'number', required: true },
+    })
 
-//     const submissionsCount = await Submission.count({
-//       where: {
-//         taskId: id
-//       }
-//     });
+    const sanitizedBody = { ...req.body }
 
-//     if (submissionsCount === 0) {
-//       return next(CustomError.badRequest('No submissions found for this task'));
-//     }
+    const numberFields = ['totalPool', 'totalSpots']
+    numberFields.forEach((field) => {
+      if (sanitizedBody[field] !== undefined && sanitizedBody[field] !== '') {
+        sanitizedBody[field] = Number(sanitizedBody[field])
+      }
+    })
 
-//     const pendingSubmission = await Submission.findOne({
-//       where: {
-//         taskId: id,
-//         status: 'pending'
-//       }
-//     });
+    const arrayFields = ['requirements', 'guidelines', 'selectionCriteria', 'howToSubmit']
+    arrayFields.forEach((field) => {
+      if (typeof sanitizedBody[field] === 'string') {
+        try {
+          let cleanStr = sanitizedBody[field].trim().replace(/'/g, '"')
+          sanitizedBody[field] = JSON.parse(cleanStr)
+        } catch (e) {
+          sanitizedBody[field] = sanitizedBody[field].split(',').map((item) => item.trim())
+        }
+      }
+    })
 
-//     if (pendingSubmission) {
-//       return res.status(OK).json({
-//         success: true,
-//         isComplete: false,
-//         message: 'There are still pending submissions for this task.'
-//       });
-//     }
+    const result = schema.validate(sanitizedBody)
+    if (result.error) {
+      return next(CustomError.badRequest('Invalid request body', result.error))
+    }
 
-//     res.status(OK).json({
-//       success: true,
-//       isComplete: true,
-//       message: 'All submissions have been processed.'
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
+    if (new Date(sanitizedBody.startDate) >= new Date(sanitizedBody.endDate)) {
+      return next(CustomError.badRequest('Start date must be before end date'))
+    }
 
-// module.exports.processTaskPayout = async function (req, res, next) {
-//   const t = await sequelize.transaction();
-//   try {
-//     const { id } = req.params;
+    let sponsorLogo = null
+    let bannerImage = null
 
-//     const task = await Task.findOne({
-//       where: {
-//         id: id,
-//         status: 'ended'
-//       }
-//     });
-//     if (!task) return next(CustomError.badRequest('Task not found or has not ended yet'));
+    if (req.files?.sponsorLogo?.length) {
+      const upload = await firebase.fileUpload(req.files.sponsorLogo[0], 'tasks')
+      if (upload instanceof CustomError) return next(upload)
+      sponsorLogo = upload
+    }
 
-//     if (task.payoutDistributed) {
-//       return next(CustomError.badRequest('Payout has already been distributed for this task'));
-//     }
+    if (req.files?.bannerImage?.length) {
+      const upload = await firebase.fileUpload(req.files.bannerImage[0], 'tasks')
+      if (upload instanceof CustomError) return next(upload)
+      bannerImage = upload
+    }
 
-//     const pendingCount = await Submission.count({ where: { taskId: id, status: 'pending' } });
-//     if (pendingCount > 0) {
-//       return next(CustomError.badRequest('All submissions must be Approved or Rejected before payout'));
-//     }
+    const draftTask = await Task.create({
+      owner: req.user.id,
+      ...sanitizedBody,
+      sponsorLogo,
+      bannerImage,
+      status: 'draft',
+      isPaid: false,
+    })
 
-//     const approvedSubmissions = await Submission.findAll({
-//       where: { taskId: id, status: 'approved' },
-//       attributes: [[sequelize.fn('DISTINCT', sequelize.col('userId')), 'userId']],
-//       raw: true
-//     });
+    const amountInKobo = Math.round(Number(sanitizedBody.totalPool) * 100)
+    const paymentInit = await paystack.generatePaymentLink({
+      email: req.user.email,
+      amount: amountInKobo,
+      metadata: {
+        userId: req.user.id,
+        taskId: draftTask.id,
+        taskType: 'company_task',
+      },
+    })
 
-//     const uniqueUserCount = approvedSubmissions.length;
+    if (paymentInit instanceof CustomError) {
+      return next(paymentInit)
+    }
 
-//     if (uniqueUserCount === 0) {
-//       await task.update({ payoutDistributed: true }, { t });
-//       await t.commit();
-//       return res.status(OK).json({ success: true, message: 'No approved users. No funds distributed.' });
-//     }
+    return res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Draft task created. Complete payment to activate task.',
+      data: {
+        taskId: draftTask.id,
+        authorizationUrl: paymentInit.data.authorization_url,
+        accessCode: paymentInit.data.access_code,
+        reference: paymentInit.data.reference,
+      },
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
 
-//     const payoutPerUser = task.totalPool / uniqueUserCount;
+module.exports.verifyAndActivateCompanyTask = async function (req, res, next) {
+  try {
+    const schema = new Schema({
+      taskId: { type: 'string', required: true },
+      paymentReference: { type: 'string', required: true },
+    })
 
-//     const userIds = approvedSubmissions.map(s => s.userId);
+    const result = schema.validate(req.body)
+    if (result.error) {
+      return next(CustomError.badRequest('Invalid request body', result.error))
+    }
 
-//     await User.update(
-//       { balance: sequelize.literal(`balance + ${payoutPerUser}`) },
-//       {
-//         where: { id: userIds },
-//         t
-//       }
-//     );
+    const { taskId, paymentReference } = req.body
 
-//     await task.update({
-//       payoutDistributed: true,
-//     }, { t });
+    const task = await Task.findByPk(taskId)
+    if (!task) {
+      return next(CustomError.notFound('Task not found'))
+    }
 
-//     await t.commit();
+    if (task.owner !== req.user.id) {
+      return next(CustomError.forbidden('Unauthorized access to this task'))
+    }
 
-//     const templatePath = path.join(__dirname, "../templates/default_email.handlebars");
-//     const defaultContent = fs.readFileSync(templatePath, "utf8");
-//     const compileTemplate = handlebars.compile(defaultContent);
+    if (task.isPaid && task.status !== 'draft') {
+      return next(CustomError.badRequest('Task has already been paid and activated'))
+    }
 
-//     const users = await User.findAll({
-//       where: { id: userIds },
-//       attributes: ['id', 'email', 'fullName']
-//     });
+    const payment = await paystack.verifyTransaction(paymentReference)
+    if (payment instanceof CustomError) return next(payment)
 
-//     const emailPromises = users.map(user => {
-//       const htmlContent = compileTemplate({
-//         fullName: user.fullName,
-//         email: user.email,
-//         message: `You have received a payout of ${payoutPerUser.toFixed(2)} for task "${task.title}". Your balance has been updated.`
-//       });
-//       return sendEmail(user.email, "Task Payout Received", htmlContent);
-//     });
+    if (!payment?.status || payment?.data?.status !== 'success') {
+      return next(CustomError.badRequest('Payment failed or transaction was not successful'))
+    }
 
-//     await Promise.all(emailPromises);
+    const expectedAmountInKobo = Math.round(Number(task.totalPool) * 100)
+    const paidAmountInKobo = Number(payment.data.amount)
 
-//     res.status(OK).json({
-//       success: true,
-//       message: `Distributed ${task.totalPool} among ${uniqueUserCount} users (${payoutPerUser.toFixed(2)} each).`
-//     });
+    if (paidAmountInKobo < expectedAmountInKobo) {
+      return next(
+        CustomError.badRequest(
+          `Insufficient payment. Expected ₦${task.totalPool}, but received ₦${paidAmountInKobo / 100}`
+        )
+      )
+    }
 
-//   } catch (error) {
-//     if (t) await t.rollback();
-//     next(error);
-//   }
-// };
+    const now = new Date()
+    const start = new Date(task.startDate)
+
+    task.isPaid = true
+    task.paymentReference = paymentReference
+    task.status = start > now ? 'upcoming' : 'active'
+
+    await task.save()
+
+    return res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Payment verified and task activated successfully',
+      data: task,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.getCompanyTasks = async function (req, res, next) {
+  try {
+    const tasks = await Task.findAll({
+      where: { owner: req.user.id },
+      order: [['createdAt', 'DESC']],
+    })
+
+    const parsedTasks = tasks.map((task) => {
+      const taskObj = task.toJSON ? task.toJSON() : task
+      const arrayFields = ['requirements', 'guidelines', 'selectionCriteria', 'howToSubmit']
+      arrayFields.forEach((field) => {
+        if (typeof taskObj[field] === 'string') {
+          try {
+            taskObj[field] = JSON.parse(taskObj[field])
+          } catch (e) {}
+        }
+      })
+      return taskObj
+    })
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Company tasks fetched successfully',
+      data: parsedTasks,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.getCompanyTask = async function (req, res, next) {
+  try {
+    const task = await Task.findOne({
+      where: { id: req.params.id, owner: req.user.id },
+    })
+
+    if (!task) {
+      return next(CustomError.notFound('Company task not found or unauthorized'))
+    }
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      data: task,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.updateCompanyTask = async function (req, res, next) {
+  try {
+    const task = await Task.findByPk(req.params.id)
+
+    if (!task) {
+      return next(CustomError.notFound('Task not found'))
+    }
+
+    if (task.owner !== req.user.id) {
+      return next(CustomError.forbidden('You can only update tasks created by your company'))
+    }
+
+    const sanitizedBody = { ...req.body }
+
+    let sponsorLogo = task.sponsorLogo
+    let bannerImage = task.bannerImage
+
+    if (req.files?.sponsorLogo?.length) {
+      if (task.sponsorLogo) await firebase.deleteFile(task.sponsorLogo)
+      const upload = await firebase.fileUpload(req.files.sponsorLogo[0], 'tasks')
+      if (upload instanceof CustomError) return next(upload)
+      sponsorLogo = upload
+    }
+
+    if (req.files?.bannerImage?.length) {
+      if (task.bannerImage) await firebase.deleteFile(task.bannerImage)
+      const upload = await firebase.fileUpload(req.files.bannerImage[0], 'tasks')
+      if (upload instanceof CustomError) return next(upload)
+      bannerImage = upload
+    }
+
+    Object.keys(sanitizedBody).forEach((key) => {
+      task[key] = sanitizedBody[key]
+    })
+
+    task.sponsorLogo = sponsorLogo
+    task.bannerImage = bannerImage
+
+    await task.save()
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Company task updated successfully',
+      data: task,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
+
+module.exports.deleteCompanyTask = async function (req, res, next) {
+  try {
+    const task = await Task.findByPk(req.params.id)
+
+    if (!task) {
+      return next(CustomError.notFound('Task not found'))
+    }
+
+    if (task.owner !== req.user.id) {
+      return next(CustomError.forbidden('You can only delete tasks created by your company'))
+    }
+
+    if (task.sponsorLogo) await firebase.deleteFile(task.sponsorLogo)
+    if (task.bannerImage) await firebase.deleteFile(task.bannerImage)
+
+    await task.destroy()
+
+    res.status(OK).json({
+      success: true,
+      status: res.statusCode,
+      message: 'Company task deleted successfully',
+      data: task,
+    })
+  } catch (error) {
+    return next({ error })
+  }
+}
